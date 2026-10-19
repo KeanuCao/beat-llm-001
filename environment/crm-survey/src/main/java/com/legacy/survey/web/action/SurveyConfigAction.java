@@ -1,17 +1,18 @@
-package com.legacy.survey.web;
+package com.legacy.survey.web.action;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ibatis.session.SqlSession;
+import org.apache.struts.action.Action;
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
 
 import com.legacy.survey.LegacyBeanConverter;
 import com.legacy.survey.Question;
@@ -20,26 +21,18 @@ import com.legacy.survey.dao.MyBatisUtil;
 import com.legacy.survey.dao.SurveyQuestionMapper;
 
 /**
- * 问卷配置保存
+ * 问卷配置保存 (Struts 1.3)
  *
  * @author crm-dev
  * @since 2006-05-20
  */
-public class SurveyConfigServlet extends HttpServlet {
+public class SurveyConfigAction extends Action {
 
-    private static final long serialVersionUID = 20060520L;
-
-    private static final Log logger = LogFactory.getLog(SurveyConfigServlet.class);
+    private static final Log logger = LogFactory.getLog(SurveyConfigAction.class);
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.sendRedirect(request.getContextPath() + "/survey_config.jsp");
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    public ActionForward execute(ActionMapping mapping, ActionForm form,
+            HttpServletRequest request, HttpServletResponse response) throws Exception {
         try {
             Map<String, Object> params = toParamMap(request);
 
@@ -49,10 +42,11 @@ public class SurveyConfigServlet extends HttpServlet {
             saveQuestions(dto);
 
             // 保存完重定向回配置页, 防止表单重复提交 (PRG, 2006 年的教条)
-            response.sendRedirect(request.getContextPath() + "/survey_config.jsp?saved=1");
+            return mapping.findForward("success");
         } catch (Exception e) {
             logger.error("[ERROR] Survey save failed");
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return null;
         }
     }
 

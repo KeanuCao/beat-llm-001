@@ -1,13 +1,15 @@
 # CRM 问卷系统 - 编排文件
 # 老架构, 三台"机器"各干各的:
-#   builder - 编译 (不在这里跑服务, 用 build.sh 单独拉起来编译)
+#   builder - 编译 (不在这里跑服务, 用 crm-survey/build.sh 单独拉起来编译)
 #   app     - Tomcat 跑应用, 前面当年还有层 Apache httpd, 这里省了
 #   db      - MySQL 5.7 存数据
+#
+# 本文件放在 environment/ 根下, 相对路径都以此为基准
 
 services:
   db:
     build:
-      context: .
+      context: ./crm-survey
       dockerfile: db/Dockerfile
     container_name: crm-mysql
     environment:
@@ -21,7 +23,7 @@ services:
 
   app:
     build:
-      context: .
+      context: ./crm-survey
       dockerfile: app/Dockerfile
     container_name: crm-tomcat
     depends_on:
@@ -33,5 +35,5 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # war 包从构建机"发"过来: 放进 ./deploy 就等于当年往 webapps 里扔包
-      - ./deploy:/usr/local/tomcat/webapps
+      # war 包从构建机"发"过来: 放进 crm-survey/deploy 就等于当年往 webapps 里扔包
+      - ./crm-survey/deploy:/usr/local/tomcat/webapps
