@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.legacy.survey.dao.SurveyQuestionMapper">
+
+    <!-- 插一条问卷题目 (发布态), 来源题 0 表示手工添加 -->
+    <insert id="insertSurveyQuestion">
+        INSERT INTO survey_question
+            (survey_id, standard_question_id, question_type, content,
+             is_required, sort_no, is_deleted, create_time, update_time)
+        VALUES
+            (#{surveyId}, 0, #{questionType}, #{content},
+             0, #{sortNo}, 0, NOW(), NOW())
+    </insert>
+
+</mapper>

@@ -1,0 +1,37 @@
+# CRM 问卷系统 - 编排文件
+# 老架构, 三台"机器"各干各的:
+#   builder - 编译 (不在这里跑服务, 用 build.sh 单独拉起来编译)
+#   app     - Tomcat 跑应用, 前面当年还有层 Apache httpd, 这里省了
+#   db      - MySQL 5.7 存数据
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+    container_name: crm-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "root123"
+      MYSQL_DATABASE: "crm_survey"
+      MYSQL_USER: "crm"
+      MYSQL_PASSWORD: "crm123"
+      TZ: "Asia/Shanghai"
+    # 注意: 不挂数据卷, 容器重建即数据重置 —— 测试环境, 故意的
+    # 数据库只在编排网络里, 不对外映射端口, DBA 想连就 docker exec
+
+  app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: crm-tomcat
+    depends_on:
+      - db
+    environment:
+      DB_HOST: "db"
+      DB_PORT: "3306"
+      TZ: "Asia/Shanghai"
+    ports:
+      - "8080:8080"
+    volumes:
+      # war 包从构建机"发"过来: 放进 ./deploy 就等于当年往 webapps 里扔包
+      - ./deploy:/usr/local/tomcat/webapps
