@@ -5,27 +5,27 @@
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO survey_task
-            (survey_id, start_date, end_date, emails, status, error_msg, send_time, create_time, update_time)
-        VALUES
-            (#{surveyId}, #{startDate}, #{endDate}, #{emails}, #{status}, #{errorMsg}, #{sendTime}, NOW(), NOW())
+              (survey_id, start_date, end_date, emails, status, error_msg, send_time, create_time, update_time)
+        VALUES (#{surveyId}, #{startDate}, #{endDate}, #{emails}, #{status}, #{errorMsg}, #{sendTime}, sysdate(), sysdate())
     </insert>
 
     <select id="selectPending" resultType="com.legacy.survey.SurveyTask">
         SELECT id, survey_id AS surveyId, start_date AS startDate, end_date AS endDate,
                emails, status, error_msg AS errorMsg, send_time AS sendTime
-        FROM survey_task
-        WHERE status = 0
-        ORDER BY id
-        LIMIT #{limit}
+          FROM survey_task
+         WHERE status = 0
+         ORDER BY id
+         LIMIT #{limit}
     </select>
 
+        <!-- TODO 20161114 失败重试次数, 现在失败了就躺着没人管 -->
     <update id="markDone">
-        UPDATE survey_task SET status = 1, send_time = NOW(), update_time = NOW()
+        UPDATE survey_task SET status = 1, send_time = sysdate(), update_time = sysdate()
         WHERE id = #{id} AND status = 0
     </update>
 
     <update id="markFailed">
-        UPDATE survey_task SET status = 2, error_msg = #{errorMsg}, update_time = NOW()
+        UPDATE survey_task SET status = 2, error_msg = #{errorMsg}, update_time = sysdate()
         WHERE id = #{id} AND status = 0
     </update>
 

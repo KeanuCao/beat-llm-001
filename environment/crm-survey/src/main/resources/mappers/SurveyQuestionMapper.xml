@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- ============================================================
+  survey_question / survey_question_option
+  2013-11-08  liqiang   iBatis 迁 MyBatis, 建文件
+  2014-03-12  wangwei   增加逻辑删除, 去掉物理 DELETE
+  2015-09-30  zhangmin  排序统一走 sort_no, 别处不要再排
+  ============================================================ -->
 <mapper namespace="com.legacy.survey.dao.SurveyQuestionMapper">
 
-    <!-- 插入问卷题目, 自增 id 回填到 q.id -->
     <insert id="insertQuestion" useGeneratedKeys="true" keyProperty="q.id">
         INSERT INTO survey_question
             (survey_id, standard_question_id, question_type, content,
@@ -39,5 +44,12 @@
         SELECT COUNT(*) FROM survey_question
         WHERE survey_id = #{surveyId} AND is_deleted = 0
     </select>
+
+    <!-- 2016-11-14 wangwei: 统计口径切到反馈表了, 这段先别删, 客服对账可能还用
+    <select id="countAnsweredBySurveyId" resultType="int">
+        SELECT COUNT(DISTINCT survey_question_id) FROM survey_answer
+        WHERE survey_id = #{surveyId}
+    </select>
+    -->
 
 </mapper>

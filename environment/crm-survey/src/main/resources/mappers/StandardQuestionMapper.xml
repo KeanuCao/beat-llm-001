@@ -3,53 +3,46 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.legacy.survey.dao.StandardQuestionMapper">
 
+    <!-- 题库全量, 选项数让页面自己数 -->
     <select id="selectAll" resultType="com.legacy.survey.Question">
-        SELECT id, question_type AS type, content AS text, sort_no AS sort
-        FROM standard_question
-        WHERE is_deleted = 0
-        ORDER BY id
+        select id, question_type type, content text, sort_no sort
+        from standard_question where is_deleted = 0 order by id
     </select>
 
     <select id="selectById" resultType="com.legacy.survey.Question">
-        SELECT id, question_type AS type, content AS text, sort_no AS sort
-        FROM standard_question
-        WHERE id = #{id} AND is_deleted = 0
+        select id, question_type type, content text, sort_no sort
+        from standard_question
+        where id = #{id} and is_deleted = 0
     </select>
 
     <select id="selectOptionsByQuestionId" resultType="com.legacy.survey.Answer">
-        SELECT id, option_content AS content, sort_no AS sort
-        FROM standard_question_option
-        WHERE standard_question_id = #{standardQuestionId}
-        ORDER BY sort_no
+        select id, option_content content, sort_no sort
+        from standard_question_option
+        where standard_question_id = #{standardQuestionId} order by sort_no
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO standard_question
+        insert into standard_question
             (question_type, content, is_required, sort_no, is_deleted, create_time, update_time)
-        VALUES
-            (#{type}, #{text}, 0, #{sort}, 0, NOW(), NOW())
+        values (#{type}, #{text}, 0, #{sort}, 0, now(), now())
     </insert>
 
-    <insert id="insertOption">
-        INSERT INTO standard_question_option
-            (standard_question_id, option_content, sort_no, create_time)
-        VALUES
-            (#{standardQuestionId}, #{content}, #{sortNo}, NOW())
+    <insert id="insertOption" useGeneratedKeys="true" keyProperty="id">
+        insert into standard_question_option (standard_question_id, option_content, sort_no, create_time)
+        values (#{standardQuestionId}, #{content}, #{sortNo}, now())
     </insert>
 
     <update id="update">
-        UPDATE standard_question
-        SET question_type = #{type}, content = #{text}, sort_no = #{sort}, update_time = NOW()
-        WHERE id = #{id} AND is_deleted = 0
+        update standard_question set question_type = #{type}, content = #{text}, sort_no = #{sort},
+        update_time = now() where id = #{id} and is_deleted = 0
     </update>
 
     <update id="logicalDelete">
-        UPDATE standard_question SET is_deleted = 1, update_time = NOW()
-        WHERE id = #{id} AND is_deleted = 0
+        update standard_question set is_deleted = 1, update_time = now() where id = #{id} and is_deleted = 0
     </update>
 
     <delete id="deleteOptionsByQuestionId">
-        DELETE FROM standard_question_option WHERE standard_question_id = #{standardQuestionId}
+        delete from standard_question_option where standard_question_id = #{standardQuestionId}
     </delete>
 
 </mapper>

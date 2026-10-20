@@ -9,6 +9,8 @@ import com.legacy.survey.SurveyTask;
 /**
  * survey_task 表的 Mapper (定时任务扫描用)
  *
+ * TODO 失败自动重试, 这期先不做
+ *
  * @author crm-dev
  * @since 2016-11-13
  */

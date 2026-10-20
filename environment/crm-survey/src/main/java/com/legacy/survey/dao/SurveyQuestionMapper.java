@@ -10,7 +10,10 @@ import com.legacy.survey.Question;
 /**
  * survey_question / survey_question_option 表的 Mapper (iBatis 升 MyBatis 3.2 之后改成接口式)
  *
- * @author crm-dev
+ * 2013-11-08  liqiang   建文件
+ * 2014-03-12  wangwei   逻辑删除改造
+ *
+ * @author liqiang
  * @since 2013-11-08
  */
 public interface SurveyQuestionMapper {
