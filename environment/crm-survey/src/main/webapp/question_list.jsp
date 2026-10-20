@@ -35,7 +35,8 @@
         <td>${q.id}</td>
         <td>
             <c:choose>
-                <c:when test="${q.type == 1}">选择式</c:when>
+                <c:when test="${q.type == 1}">单选</c:when>
+                <c:when test="${q.type == 2}">多选</c:when>
                 <c:otherwise>开放式</c:otherwise>
             </c:choose>
         </td>

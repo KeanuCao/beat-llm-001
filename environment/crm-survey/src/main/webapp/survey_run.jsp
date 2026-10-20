@@ -30,6 +30,13 @@
                     </div>
                 </c:forEach>
             </c:when>
+            <c:when test="${q.type == 2}">
+                <c:forEach var="opt" items="${q.answers}">
+                    <div class="option">
+                        <label><input type="checkbox" name="q_${q.id}" value="${opt.id}"/> ${opt.content}</label>
+                    </div>
+                </c:forEach>
+            </c:when>
             <c:otherwise>
                 <div class="option">
                     <textarea name="q_${q.id}" rows="3" cols="60"></textarea>

@@ -168,6 +168,7 @@ public class SurveyAnswerAction extends Action {
                 SurveyFeedbackQuestion fq = new SurveyFeedbackQuestion();
                 fq.setFeedbackId(feedback.getId());
                 fq.setQuestionId(q.getId());
+                fq.setQuestionType(q.getType());
                 fq.setQuestionContent(q.getText());
                 if (q.getType() == 1) {
                     // 选择式: 勾中的选项 (id>0) 才算; 以后多选就是多行选项

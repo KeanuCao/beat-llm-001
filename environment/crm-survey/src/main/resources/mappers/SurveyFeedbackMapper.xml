@@ -12,9 +12,9 @@
 
     <insert id="insertFeedbackQuestion" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO survey_feedback_question
-            (feedback_id, question_id, question_content, answer_content, create_time)
+            (feedback_id, question_id, question_type, question_content, answer_content, create_time)
         VALUES
-            (#{feedbackId}, #{questionId}, #{questionContent}, #{answerContent}, NOW())
+            (#{feedbackId}, #{questionId}, #{questionType}, #{questionContent}, #{answerContent}, NOW())
     </insert>
 
     <insert id="insertFeedbackOption" useGeneratedKeys="true" keyProperty="id">

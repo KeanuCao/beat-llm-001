@@ -18,18 +18,21 @@ import com.legacy.survey.dao.MyBatisUtil;
 import com.legacy.survey.dao.StandardQuestionMapper;
 
 /**
- * 标准题库管理 (题目两种类型: 1-选择式 2-开放式)
+ * 标准题库管理 (题目三种类型: 1-单选 2-多选 3-开放式)
  *
  * @author crm-dev
  * @since 2016-11-11
  */
 public class StandardQuestionAction extends DispatchAction {
 
-    /** 题型: 选择式 (带选项) */
-    public static final int TYPE_CHOICE = 1;
+    /** 题型: 单选 (带选项, 只选一个) */
+    public static final int TYPE_SINGLE = 1;
+
+    /** 题型: 多选 (带选项, 可选多个) */
+    public static final int TYPE_MULTI = 2;
 
     /** 题型: 开放式 (自由作答, 无选项) */
-    public static final int TYPE_OPEN = 2;
+    public static final int TYPE_OPEN = 3;
 
     /** 题库列表 */
     public ActionForward list(ActionMapping mapping, ActionForm form,
@@ -71,7 +74,7 @@ public class StandardQuestionAction extends DispatchAction {
             HttpServletRequest request, HttpServletResponse response) throws Exception {
 
         long id = parseLong(request.getParameter("id"), 0);
-        int type = parseInt(request.getParameter("questionType"), TYPE_CHOICE);
+        int type = parseInt(request.getParameter("questionType"), TYPE_SINGLE);
         String content = trim(request.getParameter("content"));
         String sortParam = request.getParameter("sortNo");
         int sort = parseInt(sortParam, 0);
@@ -81,7 +84,7 @@ public class StandardQuestionAction extends DispatchAction {
             request.setAttribute("errorMsg", "题干不能为空");
             return new ActionForward("/question_edit.jsp");
         }
-        if (type != TYPE_CHOICE && type != TYPE_OPEN) {
+        if (type != TYPE_SINGLE && type != TYPE_MULTI && type != TYPE_OPEN) {
             request.setAttribute("errorMsg", "题型不合法");
             return new ActionForward("/question_edit.jsp");
         }
@@ -111,8 +114,8 @@ public class StandardQuestionAction extends DispatchAction {
                 mapper.insert(question);
             }
 
-            // 选择式才存选项
-            if (type == TYPE_CHOICE && optionContents != null) {
+            // 单选/多选存选项
+            if (type != TYPE_OPEN && optionContents != null) {
                 int sortNo = 1;
                 for (String optionContent : optionContents) {
                     String content2 = optionContent == null ? "" : optionContent.trim();

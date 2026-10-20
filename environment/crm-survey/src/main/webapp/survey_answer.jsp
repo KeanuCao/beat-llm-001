@@ -47,6 +47,14 @@
                     </div>
                 </c:forEach>
             </c:when>
+            <c:when test="${q.type == 2}">
+                <c:forEach var="opt" items="${q.answers}" varStatus="oj">
+                    <div class="option">
+                        <input type="hidden" name="questions[${st.index}].answers[${oj.index}].content" value="${opt.content}"/>
+                        <label><input type="checkbox" name="questions[${st.index}].answers[${oj.index}].id" value="${opt.id}"/> ${opt.content}</label>
+                    </div>
+                </c:forEach>
+            </c:when>
             <c:otherwise>
                 <div class="option">
                     <input type="hidden" name="questions[${st.index}].answers[0].id" value="0"/>

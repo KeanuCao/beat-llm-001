@@ -12,10 +12,10 @@
         .err { color: red; }
     </style>
     <script type="text/javascript">
-        // 选择式才有选项
+        // 单选/多选才有选项
         function toggleOptions() {
-            var choice = document.getElementById("typeChoice").checked;
-            document.getElementById("optionArea").style.display = choice ? "" : "none";
+            var has = document.getElementById("typeSingle").checked || document.getElementById("typeMulti").checked;
+            document.getElementById("optionArea").style.display = has ? "" : "none";
         }
         // 动态追加一个选项输入框
         function addOption() {
@@ -45,10 +45,12 @@
         <tr>
             <td>题型:</td>
             <td>
-                <input type="radio" name="questionType" id="typeChoice" value="1"
-                       onclick="toggleOptions()" ${question.type == 1 or empty question ? 'checked' : ''}/> 选择式
-                <input type="radio" name="questionType" id="typeOpen" value="2"
-                       onclick="toggleOptions()" ${question.type == 2 ? 'checked' : ''}/> 开放式
+                <input type="radio" name="questionType" id="typeSingle" value="1"
+                       onclick="toggleOptions()" ${question.type == 1 or empty question ? 'checked' : ''}/> 单选
+                <input type="radio" name="questionType" id="typeMulti" value="2"
+                       onclick="toggleOptions()" ${question.type == 2 ? 'checked' : ''}/> 多选
+                <input type="radio" name="questionType" id="typeOpen" value="3"
+                       onclick="toggleOptions()" ${question.type == 3 ? 'checked' : ''}/> 开放式
             </td>
         </tr>
         <tr>

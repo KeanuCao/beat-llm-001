@@ -24,6 +24,9 @@ public class SurveyFeedbackQuestion implements Serializable {
     /** 题干快照 (冗余) */
     private String questionContent;
 
+    /** 题型快照: 1-单选 2-多选 3-开放式 */
+    private int questionType;
+
     /** 开放题作答文本 (选择题为空) */
     private String answerContent;
 
@@ -59,6 +62,14 @@ public class SurveyFeedbackQuestion implements Serializable {
 
     public void setQuestionContent(String questionContent) {
         this.questionContent = questionContent;
+    }
+
+    public int getQuestionType() {
+        return questionType;
+    }
+
+    public void setQuestionType(int questionType) {
+        this.questionType = questionType;
     }
 
     public String getAnswerContent() {

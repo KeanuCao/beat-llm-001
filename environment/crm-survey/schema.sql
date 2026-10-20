@@ -40,7 +40,7 @@ CREATE TABLE `survey` (
 DROP TABLE IF EXISTS `standard_question`;
 CREATE TABLE `standard_question` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键, 自增',
-  `question_type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '题型: 1-选择式(带选项) 2-开放式(自由作答, 无选项)',
+  `question_type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '题型: 1-单选 2-多选 3-开放式(自由作答, 无选项)',
   `content` varchar(1000) NOT NULL COMMENT '题干内容',
   `is_required` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否必答: 0-否 1-是',
   `sort_no` int(11) NOT NULL DEFAULT '0' COMMENT '排序号',
@@ -72,7 +72,7 @@ CREATE TABLE `survey_question` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键, 自增',
   `survey_id` bigint(20) NOT NULL COMMENT '所属问卷ID (survey.id)',
   `standard_question_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '来源标准题ID, 0-手工添加',
-  `question_type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '题型: 1-选择式(带选项) 2-开放式(自由作答, 无选项)',
+  `question_type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '题型: 1-单选 2-多选 3-开放式(自由作答, 无选项)',
   `content` varchar(1000) NOT NULL COMMENT '题干内容',
   `is_required` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否必答: 0-否 1-是',
   `sort_no` int(11) NOT NULL DEFAULT '0' COMMENT '排序号',
@@ -112,9 +112,9 @@ INSERT INTO `survey` (`id`, `title`, `description`, `status`, `creator_id`, `pub
 INSERT INTO `standard_question` (`id`, `question_type`, `content`, `is_required`, `sort_no`, `is_deleted`, `create_time`, `update_time`) VALUES
 (1, 1, '您对本次购买的产品整体满意吗？', 1, 1, 0, '2016-11-01 10:05:00', '2016-11-01 10:05:00'),
 (2, 1, '您最关注产品的哪些方面？', 0, 2, 0, '2016-11-01 10:08:00', '2016-11-01 10:08:00'),
-(3, 2, '您还有什么其他建议？', 0, 3, 0, '2016-11-01 10:10:00', '2016-11-01 10:10:00'),
+(3, 3, '您还有什么其他建议？', 0, 3, 0, '2016-11-01 10:10:00', '2016-11-01 10:10:00'),
 (4, 1, '接线人员的服务态度您是否满意？', 1, 4, 0, '2016-11-04 17:35:00', '2016-11-04 17:35:00'),
-(5, 2, '您对本系统还有哪些意见或建议？', 0, 5, 0, '2016-11-04 17:36:00', '2016-11-04 17:36:00');
+(5, 3, '您对本系统还有哪些意见或建议？', 0, 5, 0, '2016-11-04 17:36:00', '2016-11-04 17:36:00');
 
 -- 标准题选项
 INSERT INTO `standard_question_option` (`id`, `standard_question_id`, `option_content`, `sort_no`, `create_time`) VALUES
@@ -133,7 +133,7 @@ INSERT INTO `standard_question_option` (`id`, `standard_question_id`, `option_co
 -- 问卷题: 已发布问卷 2, 从标准题库 4、5 选入
 INSERT INTO `survey_question` (`id`, `survey_id`, `standard_question_id`, `question_type`, `content`, `is_required`, `sort_no`, `is_deleted`, `create_time`, `update_time`) VALUES
 (1, 2, 4, 1, '接线人员的服务态度您是否满意？', 1, 1, 0, '2016-11-05 09:00:00', '2016-11-05 09:00:00'),
-(2, 2, 5, 2, '您对本系统还有哪些意见或建议？', 0, 2, 0, '2016-11-05 09:00:00', '2016-11-05 09:00:00');
+(2, 2, 5, 3, '您对本系统还有哪些意见或建议？', 0, 2, 0, '2016-11-05 09:00:00', '2016-11-05 09:00:00');
 
 -- 问卷题选项: 从标准选项 9、10、11 复制
 INSERT INTO `survey_question_option` (`id`, `survey_question_id`, `standard_question_option_id`, `option_content`, `sort_no`, `create_time`) VALUES
@@ -224,6 +224,7 @@ CREATE TABLE `survey_feedback_question` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键, 自增',
   `feedback_id` bigint(20) NOT NULL COMMENT '反馈ID (survey_feedback.id)',
   `question_id` bigint(20) NOT NULL COMMENT '问卷题ID (survey_question.id)',
+  `question_type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '题型快照: 1-单选 2-多选 3-开放式',
   `question_content` varchar(1000) NOT NULL COMMENT '题干快照 (冗余, 免关联)',
   `answer_content` varchar(1000) DEFAULT NULL COMMENT '开放题作答文本 (选择题为空)',
   `create_time` datetime NOT NULL COMMENT '创建时间',
@@ -232,7 +233,7 @@ CREATE TABLE `survey_feedback_question` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='反馈题目表(题干快照)';
 
 -- ----------------------------
--- 11. 反馈选项表 (选择式的选择结果; 以后多选题就是多行)
+-- 11. 反馈选项表 (选择结果快照; 多选题一行一个勾选项)
 -- ----------------------------
 DROP TABLE IF EXISTS `survey_feedback_option`;
 CREATE TABLE `survey_feedback_option` (
