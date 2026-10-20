@@ -107,9 +107,6 @@ public class SurveyAnswerAction extends Action {
 
     /** 提交作答: 邮箱掩码必须匹配 */
     private ActionForward submit(HttpServletRequest request) {
-        // 整单打印表单内容, 排障用
-        dumpForm(request);
-
         Map<String, Object> params = toParamMap(request);
         SurveyFeedbackDTO dto = new SurveyFeedbackDTO();
         SuperBeanConverter.populate(dto, params);
@@ -237,25 +234,6 @@ public class SurveyAnswerAction extends Action {
             }
         }
         return params;
-    }
-
-    /** 表单内容整单落日志 (一参数一行) */
-    private void dumpForm(HttpServletRequest request) {
-        logger.info("[SurveyAnswer] 收到作答提交, 表单内容如下:");
-        Map<String, String[]> params = request.getParameterMap();
-        Iterator<String> keys = params.keySet().iterator();
-        while (keys.hasNext()) {
-            String name = keys.next();
-            String[] values = params.get(name);
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < values.length; i++) {
-                if (i > 0) {
-                    sb.append(", ");
-                }
-                sb.append(values[i]);
-            }
-            logger.info("[SurveyAnswer]   " + name + " = " + sb.toString());
-        }
     }
 
     private static String trim(String s) {
