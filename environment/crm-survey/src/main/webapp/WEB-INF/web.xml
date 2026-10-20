@@ -40,6 +40,10 @@
     </filter-mapping>
     <filter-mapping>
         <filter-name>loginCheckFilter</filter-name>
+        <url-pattern>/surveyConfig.do</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>loginCheckFilter</filter-name>
         <url-pattern>/question.do</url-pattern>
     </filter-mapping>
     <filter-mapping>
@@ -78,7 +82,7 @@
     </error-page>
 
     <welcome-file-list>
-        <welcome-file>survey_config.jsp</welcome-file>
+        <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
 
 </web-app>

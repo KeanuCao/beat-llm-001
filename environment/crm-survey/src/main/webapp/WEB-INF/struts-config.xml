@@ -5,9 +5,7 @@
 
     <action-mappings>
         <action path="/surveyConfig"
-                type="com.legacy.survey.web.action.SurveyConfigAction">
-            <forward name="success" path="/survey_config.jsp?saved=1" redirect="true"/>
-        </action>
+                type="com.legacy.survey.web.action.SurveyConfigAction"/>
         <action path="/login"
                 type="com.legacy.survey.web.action.LoginAction"/>
         <action path="/user"

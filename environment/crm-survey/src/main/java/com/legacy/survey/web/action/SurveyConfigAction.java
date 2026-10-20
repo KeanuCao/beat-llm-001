@@ -1,5 +1,6 @@
 package com.legacy.survey.web.action;
 
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,15 +36,26 @@ public class SurveyConfigAction extends Action {
     public ActionForward execute(ActionMapping mapping, ActionForm form,
             HttpServletRequest request, HttpServletResponse response) throws Exception {
         try {
+            // surveyId 直接从请求取, 不依赖 populate (嵌套参数一炸, id 可能都没灌上)
+            long surveyId;
+            try {
+                surveyId = Long.parseLong(request.getParameter("id"));
+            } catch (NumberFormatException e) {
+                surveyId = 0;
+            }
+
             Map<String, Object> params = toParamMap(request);
 
             SurveyDTO dto = new SurveyDTO();
+            dto.setId(surveyId);
             LegacyBeanConverter.populate(dto, params);
 
             saveQuestions(dto);
 
-            // 保存完重定向回配置页, 防止表单重复提交 (PRG, 2006 年的教条)
-            return mapping.findForward("success");
+            // 保存完 PRG 回题目设置页 (防重复提交, 2006 年的教条)
+            // 注意: forward 的 path 是 module-relative, struts 会自己补 contextPath
+            return new ActionForward("/survey.do?method=questions&surveyId=" + surveyId
+                    + "&msg=" + URLEncoder.encode("保存成功!", "UTF-8"), true);
         } catch (Exception e) {
             logger.error("[ERROR] Survey save failed");
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

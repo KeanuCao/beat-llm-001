@@ -35,7 +35,7 @@ cd environment && docker compose down && docker compose up -d --build
 docker exec crm-mysql mysql -ucrm -pcrm123 crm_survey -e "SELECT COUNT(*) FROM survey_question;"
 
 # 模拟一次带 CSRF 的提交：GET 响应里已含 token，保存 cookie 后 POST
-curl -s -c /tmp/cj http://localhost:8080/crm-survey/survey_config.jsp -o /tmp/page.html
+curl -s -c /tmp/cj http://localhost:8080/crm-survey/login.jsp -o /tmp/page.html
 TOKEN=$(sed -n 's/.*name="csrfToken" value="\([^"]*\)".*/\1/p' /tmp/page.html)
 curl -s -b /tmp/cj -X POST http://localhost:8080/crm-survey/surveyConfig.do \
   --data-urlencode "csrfToken=$TOKEN" --data-urlencode "surveyName=demo" --data-urlencode "id=0" \
@@ -59,7 +59,7 @@ curl -s -b /tmp/cj -X POST http://localhost:8080/crm-survey/surveyConfig.do \
 请求链路：
 
 ```
-survey_config.jsp
+页面表单（题目设置页的自定义题目 / 题面的 HTTP 模拟）
   → CsrfFilter (/*)：GET 在 session 里生成 CSRF_TOKEN；POST 必须带同名 csrfToken 参数，否则 403
   → ActionServlet (*.do) → SurveyConfigAction
   → LegacyBeanConverter → commons-beanutils 按 questions[0].answers[1].content 这类嵌套路径灌入 SurveyDTO
@@ -77,9 +77,9 @@ survey_config.jsp
 ## 当前进度与已知不一致（写测试/参考解前必看）
 
 1. **`solution/solve.sh`、`tests/test.sh` 和 `task.toml` 的 `[metadata]` 还是最初物理题的残留**：solve.sh 在改 `/app/simulation.py`，test.sh 在跑 `python3 /app/simulation.py` 并 grep `13.6|121.567`，metadata 是 `physics-coding`/`quantum-mechanics`。与 CRM 题完全不符，验收逻辑需要按题面重写（HTTP 提交后行数 2/6、连续 10 次 20/60、页面 `saved=1`、`bugs/` 下五节 bug 单）。
-2. 题面称数据库里有 **`Patient Experience & Satisfaction Survey (OPD/IPD)-201608`**，但 `schema.sql` 只有两份中文问卷，没有这条数据。
-3. 题面给的入口是 `http://localhost:8080/survey_config.jsp`，但 war 的 `finalName` 是 `crm-survey`，实际上下文路径为 `http://localhost:8080/crm-survey/survey_config.jsp`（JSP 表单用 `contextPath` 拼 action，所以页面本身能跑）。两者需对齐（改入口说明或改成 ROOT 部署）。
-4. 当前应用只插入 `survey_question`：`SurveyQuestionMapper` 只有一个 insert，`saveQuestions` 只遍历题目；JSP 提交的选项 `questions[i].answers[j].content` 没有落库路径。按题面"2 题 × 3 选项"验证，现状必然失败。且 JSP 第 2 题写死为问答（type=3），题面要求两道单选题。
+2. （已对齐）题面不再引用具名问卷，改为"干净环境自行复现 E2E"；`schema.sql` 种子保持干净即可。
+3. （已对齐）入口与链接统一到 `/crm-survey` 上下文：后台入口 `/crm-survey/login.jsp`，提交端点 `/crm-survey/surveyConfig.do`，邮件链接与 QC 脚本同前缀。`survey_config.jsp` 独立页已删除；其提交链路 `SurveyConfigAction` 保留——它是题目雷区与验收端点，且已纳入登录守卫。
+4. （已对齐）选项已有落库路径：`insertQuestion`（回填 `q.id`）+ `insertOption`，题库选入/自定义题目/受访者作答均已实测落库。题型为 1-选择式 / 2-开放式，不存在 type=3。
 5. 关键代码可疑点（疑似故意埋点，参考解和测试前先确认）：
    - `SurveyDTO.getQuestions()` 是 `(Question[]) questions.toArray()`，`toArray()` 返回 `Object[]`，运行期会 `ClassCastException`；同时与 `getQuestions(int)` 重载影响 JavaBean 内省。
    - `LegacyBeanConverter.populate` 捕获所有异常后只打一条 WARN，参数绑定失败会静默丢数据。
