@@ -11,7 +11,7 @@
 - 构建与部署：在 `environment/crm-survey/` 下执行 `./build.sh` 编译，war 会放到 `crm-survey/deploy/` 并被 Tomcat 自动部署；修改代码后重跑 `./build.sh` 并重启 app 容器即可生效
 - 访问入口：http://localhost:8080/survey_config.jsp
 - 站点启用了 CSRF 防护，不带合法 token 的 POST 请求会被直接拒绝（403）
-- 有问题的Survey数据我已经从产线数据库拷贝到沙盒的数据库中，Survey的名称叫Patient Experience & Satisfaction Survey (OPD/IPD)-201608
+- 为了保证问题在一个干净的环境被复现，我们需要自己思考问题是怎么从E2E发生的
 
 ## 期望结果
 1. 以模拟真实 HTTP 请求的方式（正确处理 CSRF，全程不触发 403）提交一份包含 2 道单选题、每题 3 个选项的问卷数据
