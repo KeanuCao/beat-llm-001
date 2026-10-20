@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.legacy.survey.dao.SurveyInviteMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_invite
+            (uuid, survey_id, email, email_mask, status, create_time, send_time, update_time)
+        VALUES
+            (#{uuid}, #{surveyId}, #{email}, #{emailMask}, #{status}, NOW(), #{sendTime}, NOW())
+    </insert>
+
+    <select id="selectByUuid" resultType="com.legacy.survey.SurveyInvite">
+        SELECT id, uuid, survey_id AS surveyId, email, email_mask AS emailMask,
+               status, create_time AS createTime, send_time AS sendTime
+        FROM survey_invite
+        WHERE uuid = #{uuid}
+    </select>
+
+    <update id="markSent">
+        UPDATE survey_invite SET status = 1, send_time = NOW(), update_time = NOW()
+        WHERE id = #{id} AND status = 0
+    </update>
+
+    <update id="markAnswered">
+        UPDATE survey_invite SET status = 2, update_time = NOW()
+        WHERE id = #{id} AND status = 1
+    </update>
+
+</mapper>

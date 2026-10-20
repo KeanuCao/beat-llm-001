@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.legacy.survey.dao.StandardQuestionMapper">
+
+    <select id="selectAll" resultType="com.legacy.survey.Question">
+        SELECT id, question_type AS type, content AS text, sort_no AS sort
+        FROM standard_question
+        WHERE is_deleted = 0
+        ORDER BY id
+    </select>
+
+    <select id="selectById" resultType="com.legacy.survey.Question">
+        SELECT id, question_type AS type, content AS text, sort_no AS sort
+        FROM standard_question
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <select id="selectOptionsByQuestionId" resultType="com.legacy.survey.Answer">
+        SELECT id, option_content AS content, sort_no AS sort
+        FROM standard_question_option
+        WHERE standard_question_id = #{standardQuestionId}
+        ORDER BY sort_no
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO standard_question
+            (question_type, content, is_required, sort_no, is_deleted, create_time, update_time)
+        VALUES
+            (#{type}, #{text}, 0, #{sort}, 0, NOW(), NOW())
+    </insert>
+
+    <insert id="insertOption" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO standard_question_option
+            (standard_question_id, option_content, sort_no, create_time)
+        VALUES
+            (#{standardQuestionId}, #{content}, #{sortNo}, NOW())
+    </insert>
+
+    <update id="update">
+        UPDATE standard_question
+        SET question_type = #{type}, content = #{text}, sort_no = #{sort}, update_time = NOW()
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+    <update id="logicalDelete">
+        UPDATE standard_question SET is_deleted = 1, update_time = NOW()
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+    <delete id="deleteOptionsByQuestionId">
+        DELETE FROM standard_question_option WHERE standard_question_id = #{standardQuestionId}
+    </delete>
+
+</mapper>

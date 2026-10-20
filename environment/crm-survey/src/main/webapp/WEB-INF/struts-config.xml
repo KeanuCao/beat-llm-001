@@ -8,6 +8,19 @@
                 type="com.legacy.survey.web.action.SurveyConfigAction">
             <forward name="success" path="/survey_config.jsp?saved=1" redirect="true"/>
         </action>
+        <action path="/login"
+                type="com.legacy.survey.web.action.LoginAction"/>
+        <action path="/user"
+                type="com.legacy.survey.web.action.UserAction"
+                parameter="method"/>
+        <action path="/question"
+                type="com.legacy.survey.web.action.StandardQuestionAction"
+                parameter="method"/>
+        <action path="/survey"
+                type="com.legacy.survey.web.action.SurveyAction"
+                parameter="method"/>
+        <action path="/surveyAnswer"
+                type="com.legacy.survey.web.action.SurveyAnswerAction"/>
     </action-mappings>
 
 </struts-config>

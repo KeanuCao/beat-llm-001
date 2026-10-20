@@ -14,6 +14,7 @@ import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
+import com.legacy.survey.Answer;
 import com.legacy.survey.LegacyBeanConverter;
 import com.legacy.survey.Question;
 import com.legacy.survey.SurveyDTO;
@@ -69,7 +70,7 @@ public class SurveyConfigAction extends Action {
     }
 
     /**
-     * 题目逐条入库 (survey_question 表)
+     * 题目逐条入库 (survey_question / survey_question_option)
      */
     private void saveQuestions(SurveyDTO dto) {
         SqlSession session = MyBatisUtil.openSession();
@@ -83,7 +84,16 @@ public class SurveyConfigAction extends Action {
                 } catch (IndexOutOfBoundsException e) {
                     break;
                 }
-                mapper.insertSurveyQuestion(dto.getId(), q.getType(), q.getText(), q.getSort());
+                mapper.insertQuestion(dto.getId(), 0, q);
+                // 选项跟着题目一起入库
+                int optionSort = 1;
+                for (Answer answer : q.getAnswers()) {
+                    String content = answer.getContent() == null ? "" : answer.getContent().trim();
+                    if (content.length() == 0) {
+                        continue;
+                    }
+                    mapper.insertOption(q.getId(), 0, content, optionSort++);
+                }
             }
             session.commit();
         } finally {

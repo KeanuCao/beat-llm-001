@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<h3>问卷配置</h3>
+<h3>问卷配置 <a style="float: right; font-size: 12px; font-weight: normal;" href="${pageContext.request.contextPath}/question.do?method=list">题目管理</a> <a style="float: right; font-size: 12px; font-weight: normal; margin-right: 12px;" href="${pageContext.request.contextPath}/user.do?method=list">用户管理</a></h3>
 
 <div style="color: green;">
 <%= request.getParameter("saved") != null ? "保存成功!" : "" %>
@@ -28,7 +28,7 @@
             <td><input type="text" name="surveyName" size="50" maxlength="200"/></td>
         </tr>
         <tr>
-            <td>题目1 (单选):</td>
+            <td>题目1 (选择式):</td>
             <td>
                 <input type="hidden" name="questions[0].id" value="0"/>
                 <input type="hidden" name="questions[0].type" value="1"/>
@@ -45,10 +45,10 @@
             </td>
         </tr>
         <tr>
-            <td>题目2 (问答):</td>
+            <td>题目2 (开放式):</td>
             <td>
                 <input type="hidden" name="questions[1].id" value="0"/>
-                <input type="hidden" name="questions[1].type" value="3"/>
+                <input type="hidden" name="questions[1].type" value="2"/>
                 <input type="hidden" name="questions[1].sort" value="2"/>
                 <input type="text" name="questions[1].text" size="60" maxlength="1000"/>
             </td>
