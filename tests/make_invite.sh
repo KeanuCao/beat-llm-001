@@ -94,4 +94,4 @@ else
 fi
 
 # ---------- 输出链接 ----------
-echo "${MAIL_BASE_URL:-http://localhost:8080}/surveyAnswer.do?t=$UUID"
+echo "${MAIL_BASE_URL:-http://localhost:8080/crm-survey}/surveyAnswer.do?t=$UUID"

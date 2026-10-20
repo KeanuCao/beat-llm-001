@@ -43,7 +43,7 @@ public final class MailUtil {
     }
 
     public static String getBaseUrl() {
-        return CONFIG.getProperty("mail.base.url", "http://localhost:8080");
+        return CONFIG.getProperty("mail.base.url", "http://localhost:8080/crm-survey");
     }
 
     /**
