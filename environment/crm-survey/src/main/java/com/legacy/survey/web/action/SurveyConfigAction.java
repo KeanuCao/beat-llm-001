@@ -35,7 +35,7 @@ public class SurveyConfigAction extends Action {
     public ActionForward execute(ActionMapping mapping, ActionForm form,
             HttpServletRequest request, HttpServletResponse response) throws Exception {
         try {
-            // 这段后来重写过, 没走老的灌数工具, 参数手工逐层解析 (稳)
+            // 这段后来重写过, 参数手工逐层解析
             long surveyId;
             try {
                 surveyId = Long.parseLong(request.getParameter("id"));

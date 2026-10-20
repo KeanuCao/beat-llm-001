@@ -25,9 +25,6 @@ grep '\[SurveyAnswer\]' catalina.out
 
 # 业务与定时任务的失败
 grep '\[ERROR\]' catalina.out
-
-# 问卷配置保存链路的警告
-grep '\[WARN\]' catalina.out
 ```
 
 ## 一分钟自检

@@ -35,7 +35,7 @@
 <h3>${survey.title} <span style="font-size: 12px; font-weight: normal;">(问卷作答)</span></h3>
 <div>${survey.description}</div>
 
-<%-- 嵌套参数: questions[序号].xxx / answers[序号].xxx, 和后台配置一个路数 --%>
+<%-- 嵌套参数: questions[序号].xxx / answers[序号].xxx --%>
 <form action="${pageContext.request.contextPath}/surveyAnswer.do" method="post">
     <input type="hidden" name="csrfToken" value="${sessionScope.CSRF_TOKEN}"/>
     <input type="hidden" name="t" value="${invite.uuid}"/>

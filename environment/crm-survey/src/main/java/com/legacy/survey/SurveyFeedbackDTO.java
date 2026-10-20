@@ -1,7 +1,7 @@
 package com.legacy.survey;
 
 /**
- * 受访者作答 DTO, 和后台配置的 SurveyDTO 一个路数 (继承它的嵌套结构)
+ * 受访者作答 DTO
  *
  * @author crm-dev
  * @since 2016-11-14

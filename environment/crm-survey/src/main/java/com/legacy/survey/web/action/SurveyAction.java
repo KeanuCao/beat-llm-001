@@ -355,7 +355,7 @@ public class SurveyAction extends DispatchAction {
         }
     }
 
-    /** JSP 不直接读 q.answers (数组 getter 会抛 ClassCastException), 按题目 ID 单独给一份选项 */
+    /** JSP 不直接读 q.answers, 按题目 ID 单独给一份选项 */
     private static Map<Long, List<Answer>> loadOptions(SurveyQuestionMapper questionMapper,
             List<Question> questions) {
         Map<Long, List<Answer>> optionsByQuestionId = new HashMap<Long, List<Answer>>();
