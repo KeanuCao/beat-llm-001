@@ -51,6 +51,13 @@
         <td>
             <a href="${pageContext.request.contextPath}/survey.do?method=edit&id=${s.id}">编辑</a>
             <a href="${pageContext.request.contextPath}/survey.do?method=questions&surveyId=${s.id}">题目设置</a>
+            <c:if test="${s.status != 1}">
+            <form action="${pageContext.request.contextPath}/survey.do?method=start" method="post">
+                <input type="hidden" name="csrfToken" value="${sessionScope.CSRF_TOKEN}"/>
+                <input type="hidden" name="surveyId" value="${s.id}"/>
+                <button type="submit">发布问卷</button>
+            </form>
+            </c:if>
             <form action="${pageContext.request.contextPath}/survey.do?method=delete" method="post">
                 <input type="hidden" name="csrfToken" value="${sessionScope.CSRF_TOKEN}"/>
                 <input type="hidden" name="id" value="${s.id}"/>
