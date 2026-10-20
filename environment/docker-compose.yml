@@ -19,7 +19,9 @@ services:
       MYSQL_PASSWORD: "crm123"
       TZ: "Asia/Shanghai"
     # 注意: 不挂数据卷, 容器重建即数据重置 —— 测试环境, 故意的
-    # 数据库只在编排网络里, 不对外映射端口, DBA 想连就 docker exec
+    # 3306 暴露给测试环境直连验数 (账号 crm/crm123, root 密码 root123)
+    ports:
+      - "3306:3306"
 
   app:
     build:

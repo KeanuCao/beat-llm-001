@@ -15,3 +15,5 @@ COPY init-admin.sql /docker-entrypoint-initdb.d/99-init-admin.sql
 
 # 中国区老项目标配 utf8 (别问为什么不是 utf8mb4, 2006 年还没这东西)
 CMD ["--character-set-server=utf8", "--collation-server=utf8_general_ci"]
+
+EXPOSE 3306
