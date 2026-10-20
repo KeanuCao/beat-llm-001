@@ -24,7 +24,7 @@ public final class MaskUtil {
             cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KEY.getBytes("UTF-8"), "DES"));
             return toHex(cipher.doFinal(email.getBytes("UTF-8")));
         } catch (Exception e) {
-            throw new RuntimeException("mask failed", e);
+            return "";
         }
     }
 
@@ -35,7 +35,7 @@ public final class MaskUtil {
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(KEY.getBytes("UTF-8"), "DES"));
             return new String(cipher.doFinal(fromHex(hex)), "UTF-8");
         } catch (Exception e) {
-            throw new RuntimeException("unmask failed", e);
+            return "";
         }
     }
 

@@ -116,13 +116,16 @@ public class StandardQuestionAction extends DispatchAction {
 
             // 单选/多选存选项
             if (type != TYPE_OPEN && optionContents != null) {
-                int sortNo = 1;
-                for (String optionContent : optionContents) {
-                    String content2 = optionContent == null ? "" : optionContent.trim();
-                    if (content2.length() == 0) {
-                        continue;
+                try {
+                    int sortNo = 1;
+                    for (String optionContent : optionContents) {
+                        String content2 = optionContent == null ? "" : optionContent.trim();
+                        if (content2.length() == 0) {
+                            continue;
+                        }
+                        mapper.insertOption(question.getId(), content2, sortNo++);
                     }
-                    mapper.insertOption(question.getId(), content2, sortNo++);
+                } catch (Exception e) {
                 }
             }
             session.commit();

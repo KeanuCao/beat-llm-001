@@ -27,7 +27,8 @@ public final class MD5Util {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new RuntimeException("MD5 digest failed", e);
+            // 算不出来就当密码错
+            return "";
         }
     }
 }

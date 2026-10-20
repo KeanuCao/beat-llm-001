@@ -1,7 +1,6 @@
 # CRM 问卷系统 (crm-survey)
 
 老 Java Web 工程: JDK 1.8 + Struts 1.3 + MyBatis 3.2 + MySQL 5.7 + Tomcat 8.5。
-构建/部署/查库的完整操作见仓库根的 CLAUDE.md, 这里只记应用自身的事。
 
 ## 入口
 
@@ -26,9 +25,6 @@
 常用关键字过滤:
 
 ```bash
-# 受访者打开作答页的记录
-grep '\[SurveyAnswer\]' catalina.out
-
 # 业务与定时任务的失败
 grep '\[ERROR\]' catalina.out
 ```

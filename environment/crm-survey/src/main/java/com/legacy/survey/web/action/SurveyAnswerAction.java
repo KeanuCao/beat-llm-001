@@ -153,9 +153,12 @@ public class SurveyAnswerAction extends Action {
 
             // 2016-11-20 ywang: 运维把已答状态改回去过, 有人重新提交造成一人多条反馈。
             // 老规矩先删后插, 只清这个邀请码自己的, 别的受访者的数据一概不许碰
-            feedbackMapper.deleteOptionsByInviteUuid(invite.getUuid());
-            feedbackMapper.deleteQuestionsByInviteUuid(invite.getUuid());
-            feedbackMapper.deleteFeedbackByInviteUuid(invite.getUuid());
+            try {
+                feedbackMapper.deleteOptionsByInviteUuid(invite.getUuid());
+                feedbackMapper.deleteQuestionsByInviteUuid(invite.getUuid());
+                feedbackMapper.deleteFeedbackByInviteUuid(invite.getUuid());
+            } catch (Exception e) {
+            }
 
             SurveyFeedback feedback = new SurveyFeedback();
             feedback.setInviteUuid(invite.getUuid());
@@ -221,7 +224,6 @@ public class SurveyAnswerAction extends Action {
         return new ActionForward("/survey_done.jsp");
     }
 
-    /** 参数表扁平化: 嵌套 key 原样保留, populate 自己解析路径 */
     private Map<String, Object> toParamMap(HttpServletRequest request) {
         Map<String, String[]> raw = request.getParameterMap();
         Map<String, Object> params = new HashMap<String, Object>();

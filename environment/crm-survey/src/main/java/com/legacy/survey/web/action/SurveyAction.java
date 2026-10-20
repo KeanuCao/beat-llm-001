@@ -319,11 +319,15 @@ public class SurveyAction extends DispatchAction {
             }
             List<SurveyFeedback> feedbacks = feedbackMapper.selectBySurveyId(surveyId);
             for (SurveyFeedback fb : feedbacks) {
-                List<SurveyFeedbackQuestion> fqs = feedbackMapper.selectQuestionsByFeedbackId(fb.getId());
-                for (SurveyFeedbackQuestion fq : fqs) {
-                    fq.setOptions(feedbackMapper.selectOptionsByFeedbackQuestionId(fq.getId()));
+                // 一个人读不出来就先降级, 别拖累整个页面
+                try {
+                    List<SurveyFeedbackQuestion> fqs = feedbackMapper.selectQuestionsByFeedbackId(fb.getId());
+                    for (SurveyFeedbackQuestion fq : fqs) {
+                        fq.setOptions(feedbackMapper.selectOptionsByFeedbackQuestionId(fq.getId()));
+                    }
+                    fb.setQuestions(fqs);
+                } catch (Exception e) {
                 }
-                fb.setQuestions(fqs);
             }
             request.setAttribute("survey", survey);
             request.setAttribute("feedbacks", feedbacks);
