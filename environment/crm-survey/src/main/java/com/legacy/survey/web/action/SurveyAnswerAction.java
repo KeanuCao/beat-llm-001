@@ -37,6 +37,12 @@ public class SurveyAnswerAction extends Action {
         return new ActionForward("/global_error.jsp");
     }
 
+    /** 重复提交不是错误, 友好告知一声 */
+    private ActionForward alreadyAnswered(HttpServletRequest request) {
+        request.setAttribute("already", Boolean.TRUE);
+        return new ActionForward("/survey_done.jsp");
+    }
+
     @Override
     public ActionForward execute(ActionMapping mapping, ActionForm form,
             HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -62,7 +68,7 @@ public class SurveyAnswerAction extends Action {
                 return globalError(request, "链接无效或已过期");
             }
             if (invite.getStatus() == SurveyInvite.STATUS_ANSWERED) {
-                return globalError(request, "该邀请已经作答过, 谢谢参与");
+                return alreadyAnswered(request);
             }
 
             SurveyQuestionMapper questionMapper = session.getMapper(SurveyQuestionMapper.class);
@@ -97,7 +103,7 @@ public class SurveyAnswerAction extends Action {
                 return globalError(request, "链接无效或已过期");
             }
             if (invite.getStatus() == SurveyInvite.STATUS_ANSWERED) {
-                return globalError(request, "该邀请已经作答过, 谢谢参与");
+                return alreadyAnswered(request);
             }
 
             // 关卡: 输入的邮箱算出来的掩码必须和邀请里存的一致
