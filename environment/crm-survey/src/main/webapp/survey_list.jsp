@@ -55,8 +55,11 @@
             <form action="${pageContext.request.contextPath}/survey.do?method=start" method="post">
                 <input type="hidden" name="csrfToken" value="${sessionScope.CSRF_TOKEN}"/>
                 <input type="hidden" name="surveyId" value="${s.id}"/>
-                <button type="submit">发布问卷</button>
+                <a href="javascript:void(0)" onclick="this.parentNode.submit()">发布问卷</a>
             </form>
+            </c:if>
+            <c:if test="${s.status == 1}">
+                <a href="${pageContext.request.contextPath}/survey.do?method=feedback&surveyId=${s.id}">回答详情</a>
             </c:if>
             <form action="${pageContext.request.contextPath}/survey.do?method=delete" method="post">
                 <input type="hidden" name="csrfToken" value="${sessionScope.CSRF_TOKEN}"/>

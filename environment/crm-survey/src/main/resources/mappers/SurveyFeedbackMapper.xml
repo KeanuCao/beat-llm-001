@@ -24,4 +24,27 @@
             (#{feedbackQuestionId}, #{optionId}, #{optionContent}, NOW())
     </insert>
 
+    <select id="selectBySurveyId" resultType="com.legacy.survey.SurveyFeedback">
+        SELECT id, invite_uuid AS inviteUuid, survey_id AS surveyId, email, create_time AS createTime
+        FROM survey_feedback
+        WHERE survey_id = #{surveyId}
+        ORDER BY id
+    </select>
+
+    <select id="selectQuestionsByFeedbackId" resultType="com.legacy.survey.SurveyFeedbackQuestion">
+        SELECT id, feedback_id AS feedbackId, question_id AS questionId, question_type AS questionType,
+               question_content AS questionContent, answer_content AS answerContent, create_time AS createTime
+        FROM survey_feedback_question
+        WHERE feedback_id = #{feedbackId}
+        ORDER BY id
+    </select>
+
+    <select id="selectOptionsByFeedbackQuestionId" resultType="com.legacy.survey.SurveyFeedbackOption">
+        SELECT id, feedback_question_id AS feedbackQuestionId, option_id AS optionId,
+               option_content AS optionContent, create_time AS createTime
+        FROM survey_feedback_option
+        WHERE feedback_question_id = #{feedbackQuestionId}
+        ORDER BY id
+    </select>
+
 </mapper>

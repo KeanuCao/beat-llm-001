@@ -17,10 +17,14 @@ import org.apache.struts.actions.DispatchAction;
 import com.legacy.survey.Answer;
 import com.legacy.survey.Question;
 import com.legacy.survey.Survey;
+import com.legacy.survey.SurveyFeedback;
+import com.legacy.survey.SurveyFeedbackOption;
+import com.legacy.survey.SurveyFeedbackQuestion;
 import com.legacy.survey.SurveyTask;
 import com.legacy.survey.User;
 import com.legacy.survey.dao.MyBatisUtil;
 import com.legacy.survey.dao.StandardQuestionMapper;
+import com.legacy.survey.dao.SurveyFeedbackMapper;
 import com.legacy.survey.dao.SurveyMapper;
 import com.legacy.survey.dao.SurveyQuestionMapper;
 import com.legacy.survey.dao.SurveyTaskMapper;
@@ -299,6 +303,36 @@ public class SurveyAction extends DispatchAction {
             session.close();
         }
         return new ActionForward("/survey.do?method=questions&surveyId=" + surveyId, true);
+    }
+
+    /** 回答详情: 谁答了, 都答了什么 (快照三表直接读, 不回联 survey_question) */
+    public ActionForward feedback(ActionMapping mapping, ActionForm form,
+            HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        long surveyId = parseLong(request.getParameter("surveyId"), 0);
+        SqlSession session = MyBatisUtil.openSession();
+        try {
+            SurveyMapper surveyMapper = session.getMapper(SurveyMapper.class);
+            SurveyFeedbackMapper feedbackMapper = session.getMapper(SurveyFeedbackMapper.class);
+            Survey survey = surveyMapper.selectById(surveyId);
+            if (survey == null) {
+                session.close();
+                return redirectWithMsg("/survey.do?method=list", "问卷不存在");
+            }
+            List<SurveyFeedback> feedbacks = feedbackMapper.selectBySurveyId(surveyId);
+            for (SurveyFeedback fb : feedbacks) {
+                List<SurveyFeedbackQuestion> fqs = feedbackMapper.selectQuestionsByFeedbackId(fb.getId());
+                for (SurveyFeedbackQuestion fq : fqs) {
+                    fq.setOptions(feedbackMapper.selectOptionsByFeedbackQuestionId(fq.getId()));
+                }
+                fb.setQuestions(fqs);
+            }
+            request.setAttribute("survey", survey);
+            request.setAttribute("feedbacks", feedbacks);
+        } finally {
+            session.close();
+        }
+        return new ActionForward("/survey_feedback.jsp");
     }
 
     /** 删除问卷 (逻辑删) */

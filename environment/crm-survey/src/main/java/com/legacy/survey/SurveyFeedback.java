@@ -2,6 +2,7 @@ package com.legacy.survey;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 调查反馈 (只记谁回答了哪份问卷)
@@ -25,6 +26,9 @@ public class SurveyFeedback implements Serializable {
     private String email;
 
     private Date createTime;
+
+    /** 答题明细 (展示用, 非库字段) */
+    private List<SurveyFeedbackQuestion> questions;
 
     public long getId() {
         return id;
@@ -64,5 +68,13 @@ public class SurveyFeedback implements Serializable {
 
     public void setCreateTime(Date createTime) {
         this.createTime = createTime;
+    }
+
+    public List<SurveyFeedbackQuestion> getQuestions() {
+        return questions;
+    }
+
+    public void setQuestions(List<SurveyFeedbackQuestion> questions) {
+        this.questions = questions;
     }
 }
