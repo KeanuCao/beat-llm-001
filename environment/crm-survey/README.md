@@ -1,0 +1,39 @@
+# CRM 问卷系统 (crm-survey)
+
+老 Java Web 工程: JDK 1.8 + Struts 1.3 + MyBatis 3.2 + MySQL 5.7 + Tomcat 8.5。
+构建/部署/查库的完整操作见仓库根的 CLAUDE.md, 这里只记应用自身的事。
+
+## 入口
+
+- 后台: `/crm-survey/login.jsp` (账号见 init-admin.sql)
+- 受访者: 邮件里的邀请链接 `/crm-survey/surveyAnswer.do?t=<uuid>`
+
+## 日志位置
+
+应用日志跟随 WEB 容器:
+
+| 环境 | 位置 |
+|------|------|
+| docker (交付环境) | `docker logs crm-tomcat` (app 前台运行, 标准输出即日志) |
+| 沙箱/裸机 Tomcat | `$CATALINA_BASE/logs/catalina.out` (另有 `catalina.<日期>.log` / `localhost.<日期>.log`) |
+
+常用关键字过滤:
+
+```bash
+# 受访者打开/提交作答, 表单内容整单打印 (一参数一行)
+grep '\[SurveyAnswer\]' catalina.out
+
+# 业务与定时任务的失败
+grep '\[ERROR\]' catalina.out
+
+# 问卷配置保存链路的警告
+grep '\[WARN\]' catalina.out
+```
+
+## 一分钟自检
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/crm-survey/login.jsp   # 200
+mysql -h127.0.0.1 -P8306 -ucrm -pcrm123 crm_survey -e "SELECT COUNT(*) FROM survey_question;"
+ls /opt/crm/mail/   # 已发送邀请的 .eml 留档
+```

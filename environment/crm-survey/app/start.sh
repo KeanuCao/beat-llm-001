@@ -2,6 +2,9 @@
 # 应用启动脚本: 先等数据库通, 再拉起 Tomcat
 # 2016 年容器里没有 healthcheck, 探活就靠 bash 的 /dev/tcp 小把戏
 
+# 日志里中文别打问号
+export JAVA_OPTS="$JAVA_OPTS -Dfile.encoding=UTF-8"
+
 set -e
 
 DB_HOST=${DB_HOST:-db}

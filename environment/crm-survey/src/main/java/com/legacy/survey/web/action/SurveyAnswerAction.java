@@ -8,6 +8,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
@@ -30,6 +32,8 @@ import com.legacy.survey.util.MaskUtil;
  * @since 2016-11-13
  */
 public class SurveyAnswerAction extends Action {
+
+    private static final Log logger = LogFactory.getLog(SurveyAnswerAction.class);
 
     /** 受访者页面统一错误出口 */
     private ActionForward globalError(HttpServletRequest request, String msg) {
@@ -56,6 +60,7 @@ public class SurveyAnswerAction extends Action {
     /** 打开作答页 (邮件链接) */
     private ActionForward open(HttpServletRequest request) {
         String token = trim(request.getParameter("t"));
+        logger.info("[SurveyAnswer] 受访者打开作答页, t=" + token);
         if (token.length() == 0) {
             return globalError(request, "链接无效");
         }
@@ -86,6 +91,8 @@ public class SurveyAnswerAction extends Action {
 
     /** 提交作答: 邮箱 + 掩码必须匹配, 不匹配直接 global error */
     private ActionForward submit(HttpServletRequest request) {
+        // 整单打印表单内容, 排障用
+        dumpForm(request);
         String token = trim(request.getParameter("t"));
         String email = trim(request.getParameter("email"));
         if (token.length() == 0) {
@@ -164,6 +171,25 @@ public class SurveyAnswerAction extends Action {
             session.close();
         }
         return new ActionForward("/survey_done.jsp");
+    }
+
+    /** 表单内容整单落日志 (一参数一行) */
+    private void dumpForm(HttpServletRequest request) {
+        logger.info("[SurveyAnswer] 收到作答提交, 表单内容如下:");
+        Map<String, String[]> params = request.getParameterMap();
+        Iterator<String> keys = params.keySet().iterator();
+        while (keys.hasNext()) {
+            String name = keys.next();
+            String[] values = params.get(name);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < values.length; i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                sb.append(values[i]);
+            }
+            logger.info("[SurveyAnswer]   " + name + " = " + sb.toString());
+        }
     }
 
     private static String trim(String s) {
