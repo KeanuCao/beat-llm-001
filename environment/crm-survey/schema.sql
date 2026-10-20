@@ -202,21 +202,47 @@ CREATE TABLE `survey_invite` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='调查邀请表';
 
 -- ----------------------------
--- 9. 问卷回答明细表
+-- 9. 调查反馈表 (只记谁回答了哪份问卷)
 -- ----------------------------
-DROP TABLE IF EXISTS `survey_answer`;
-CREATE TABLE `survey_answer` (
+DROP TABLE IF EXISTS `survey_feedback`;
+CREATE TABLE `survey_feedback` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键, 自增',
   `invite_uuid` varchar(32) NOT NULL COMMENT '邀请码',
-  `survey_id` bigint(20) NOT NULL COMMENT '问卷ID',
-  `question_id` bigint(20) NOT NULL COMMENT '问卷题ID (survey_question.id)',
-  `answer_option_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '选择的选项ID, 开放题为0',
-  `answer_content` varchar(1000) DEFAULT NULL COMMENT '开放题作答内容',
+  `survey_id` bigint(20) NOT NULL COMMENT '问卷ID (survey.id)',
   `email` varchar(100) NOT NULL COMMENT '作答者邮箱',
   `create_time` datetime NOT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_invite_uuid` (`invite_uuid`),
-  KEY `idx_question_id` (`question_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='问卷回答明细';
+  KEY `idx_survey_id` (`survey_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='调查反馈表';
+
+-- ----------------------------
+-- 10. 反馈题目表 (回答了哪些题; 题干快照冗余, 展示时不回联 survey_question)
+-- ----------------------------
+DROP TABLE IF EXISTS `survey_feedback_question`;
+CREATE TABLE `survey_feedback_question` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键, 自增',
+  `feedback_id` bigint(20) NOT NULL COMMENT '反馈ID (survey_feedback.id)',
+  `question_id` bigint(20) NOT NULL COMMENT '问卷题ID (survey_question.id)',
+  `question_content` varchar(1000) NOT NULL COMMENT '题干快照 (冗余, 免关联)',
+  `answer_content` varchar(1000) DEFAULT NULL COMMENT '开放题作答文本 (选择题为空)',
+  `create_time` datetime NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_feedback_id` (`feedback_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='反馈题目表(题干快照)';
+
+-- ----------------------------
+-- 11. 反馈选项表 (选择式的选择结果; 以后多选题就是多行)
+-- ----------------------------
+DROP TABLE IF EXISTS `survey_feedback_option`;
+CREATE TABLE `survey_feedback_option` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键, 自增',
+  `feedback_question_id` bigint(20) NOT NULL COMMENT '反馈题ID (survey_feedback_question.id)',
+  `option_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '选项ID (survey_question_option.id)',
+  `option_content` varchar(200) NOT NULL COMMENT '选项内容快照 (冗余, 免关联)',
+  `create_time` datetime NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_feedback_question_id` (`feedback_question_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='反馈选项表(选项快照)';
 
 SET FOREIGN_KEY_CHECKS = 1;

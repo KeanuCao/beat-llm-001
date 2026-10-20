@@ -18,9 +18,12 @@ import org.apache.struts.action.ActionMapping;
 
 import com.legacy.survey.Answer;
 import com.legacy.survey.Question;
+import com.legacy.survey.SurveyFeedback;
+import com.legacy.survey.SurveyFeedbackOption;
+import com.legacy.survey.SurveyFeedbackQuestion;
 import com.legacy.survey.SurveyInvite;
 import com.legacy.survey.dao.MyBatisUtil;
-import com.legacy.survey.dao.SurveyAnswerMapper;
+import com.legacy.survey.dao.SurveyFeedbackMapper;
 import com.legacy.survey.dao.SurveyInviteMapper;
 import com.legacy.survey.dao.SurveyQuestionMapper;
 import com.legacy.survey.util.MaskUtil;
@@ -118,15 +121,23 @@ public class SurveyAnswerAction extends Action {
                 return globalError(request, "邮件地址与本次邀请不匹配");
             }
 
-            // 逐题落库: 选择式记选项ID, 开放式记文本
             SurveyQuestionMapper questionMapper = session.getMapper(SurveyQuestionMapper.class);
             List<Question> questions = questionMapper.selectBySurveyId(invite.getSurveyId());
             Map<Long, Question> questionMap = new HashMap<Long, Question>();
             for (Question q : questions) {
+                // 选项列表也要加载, 否则选项内容快照会存成空串
+                q.setAnswers(questionMapper.selectOptionsByQuestionId(q.getId()));
                 questionMap.put(Long.valueOf(q.getId()), q);
             }
 
-            SurveyAnswerMapper answerMapper = session.getMapper(SurveyAnswerMapper.class);
+            // 反馈主记录: 谁答了哪份问卷
+            SurveyFeedbackMapper feedbackMapper = session.getMapper(SurveyFeedbackMapper.class);
+            SurveyFeedback feedback = new SurveyFeedback();
+            feedback.setInviteUuid(invite.getUuid());
+            feedback.setSurveyId(invite.getSurveyId());
+            feedback.setEmail(email);
+            feedbackMapper.insertFeedback(feedback);
+
             Map<String, String[]> params = request.getParameterMap();
             Iterator<String> keys = params.keySet().iterator();
             while (keys.hasNext()) {
@@ -144,9 +155,18 @@ public class SurveyAnswerAction extends Action {
                 if (value.length() == 0) {
                     continue;
                 }
+
+                // 反馈题目行: 题干快照冗余, 以后展示不用回联 survey_question
+                SurveyFeedbackQuestion fq = new SurveyFeedbackQuestion();
+                fq.setFeedbackId(feedback.getId());
+                fq.setQuestionId(questionId);
+                fq.setQuestionContent(question.getText());
                 if (question.getType() == 1) {
-                    // 选择式: 值是选项ID
+                    // 选择式: 值是选项ID (以后多选就是多个选项行)
                     long optionId = parseLong(value, 0);
+                    if (optionId <= 0) {
+                        continue;
+                    }
                     String optionContent = null;
                     for (Answer option : question.getAnswers()) {
                         if (option.getId() == optionId) {
@@ -154,13 +174,17 @@ public class SurveyAnswerAction extends Action {
                             break;
                         }
                     }
-                    if (optionId <= 0) {
-                        continue;
-                    }
-                    answerMapper.insert(invite.getUuid(), invite.getSurveyId(), questionId, optionId, optionContent, email);
+                    feedbackMapper.insertFeedbackQuestion(fq);
+
+                    SurveyFeedbackOption fo = new SurveyFeedbackOption();
+                    fo.setFeedbackQuestionId(fq.getId());
+                    fo.setOptionId(optionId);
+                    fo.setOptionContent(optionContent == null ? "" : optionContent);
+                    feedbackMapper.insertFeedbackOption(fo);
                 } else {
-                    // 开放式: 值是作答文本
-                    answerMapper.insert(invite.getUuid(), invite.getSurveyId(), questionId, 0, value, email);
+                    // 开放式: 作答文本直接快照在题目行上
+                    fq.setAnswerContent(value);
+                    feedbackMapper.insertFeedbackQuestion(fq);
                 }
             }
 

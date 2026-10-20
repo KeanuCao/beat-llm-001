@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.legacy.survey.dao.SurveyFeedbackMapper">
+
+    <insert id="insertFeedback" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_feedback
+            (invite_uuid, survey_id, email, create_time)
+        VALUES
+            (#{inviteUuid}, #{surveyId}, #{email}, NOW())
+    </insert>
+
+    <insert id="insertFeedbackQuestion" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_feedback_question
+            (feedback_id, question_id, question_content, answer_content, create_time)
+        VALUES
+            (#{feedbackId}, #{questionId}, #{questionContent}, #{answerContent}, NOW())
+    </insert>
+
+    <insert id="insertFeedbackOption" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_feedback_option
+            (feedback_question_id, option_id, option_content, create_time)
+        VALUES
+            (#{feedbackQuestionId}, #{optionId}, #{optionContent}, NOW())
+    </insert>
+
+</mapper>

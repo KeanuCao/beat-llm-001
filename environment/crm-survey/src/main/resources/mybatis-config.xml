@@ -28,6 +28,6 @@
         <mapper resource="mappers/SurveyMapper.xml"/>
         <mapper resource="mappers/SurveyTaskMapper.xml"/>
         <mapper resource="mappers/SurveyInviteMapper.xml"/>
-        <mapper resource="mappers/SurveyAnswerMapper.xml"/>
+        <mapper resource="mappers/SurveyFeedbackMapper.xml"/>
     </mappers>
 </configuration>
