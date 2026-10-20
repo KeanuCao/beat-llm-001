@@ -9,7 +9,6 @@ mail.smtp.user=你的邮箱@126.com
 mail.smtp.password=这里填授权码
 mail.smtp.ssl=true
 mail.smtp.starttls.enable=false
-# 网易系 SMTP 和新 JDK 的 TLS1.3 hello 犯冲, 钉死 1.2 (实测必配)
 mail.smtp.ssl.protocols=TLSv1.2
 
 # 发件人必须和登录账号一致, 否则 126 直接拒信

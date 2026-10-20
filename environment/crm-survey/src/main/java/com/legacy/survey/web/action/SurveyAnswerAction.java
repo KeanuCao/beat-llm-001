@@ -172,6 +172,10 @@ public class SurveyAnswerAction extends Action {
                 if (q == null || q.getId() <= 0 || !questionMap.containsKey(Long.valueOf(q.getId()))) {
                     continue;
                 }
+                // 没有题干的不落库
+                if (q.getText() == null || q.getText().trim().length() == 0) {
+                    continue;
+                }
 
                 // 反馈题目行: 题干快照冗余, 以后展示不用回联 survey_question
                 SurveyFeedbackQuestion fq = new SurveyFeedbackQuestion();
