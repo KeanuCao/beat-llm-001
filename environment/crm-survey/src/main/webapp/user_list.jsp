@@ -66,9 +66,5 @@
     </c:forEach>
 </table>
 
-<div style="margin-top: 12px;">
-    <a href="${pageContext.request.contextPath}/survey_config.jsp">返回问卷配置</a>
-</div>
-
 </body>
 </html>

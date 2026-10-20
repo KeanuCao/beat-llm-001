@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<h3>问卷配置 <a style="float: right; font-size: 12px; font-weight: normal;" href="${pageContext.request.contextPath}/question.do?method=list">题目管理</a> <a style="float: right; font-size: 12px; font-weight: normal; margin-right: 12px;" href="${pageContext.request.contextPath}/user.do?method=list">用户管理</a></h3>
+<h3>问卷配置</h3>
 
 <div style="color: green;">
 <%= request.getParameter("saved") != null ? "保存成功!" : "" %>

@@ -76,7 +76,7 @@
 </form>
 
 <div style="margin-top: 12px;">
-    <a href="${pageContext.request.contextPath}/question.do?method=list">返回题库</a>
+    <a href="${pageContext.request.contextPath}/question.do?method=list">返回列表</a>
 </div>
 
 </body>

@@ -17,7 +17,7 @@
 </head>
 <body>
 
-<h3>问卷管理 <a style="float: right; font-size: 12px; font-weight: normal;" href="${pageContext.request.contextPath}/question.do?method=list">标准题库</a></h3>
+<h3>问卷管理</h3>
 <div class="msg">${msg}</div>
 
 <div style="margin: 8px 0;">

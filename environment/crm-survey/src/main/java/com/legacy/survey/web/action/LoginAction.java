@@ -49,8 +49,8 @@ public class LoginAction extends Action {
             return new ActionForward("/login.jsp");
         }
 
-        // 登录成功
+        // 登录成功, 进后台主框架
         request.getSession(true).setAttribute(LoginCheckFilter.SESSION_USER_KEY, user);
-        return new ActionForward("/user.do?method=list", true);
+        return new ActionForward("/index.jsp", true);
     }
 }

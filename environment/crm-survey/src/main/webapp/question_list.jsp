@@ -52,10 +52,5 @@
     </c:forEach>
 </table>
 
-<div style="margin-top: 12px;">
-    <a href="${pageContext.request.contextPath}/survey.do?method=list">问卷管理</a>
-    <a href="${pageContext.request.contextPath}/survey_config.jsp">问卷配置</a>
-</div>
-
 </body>
 </html>
