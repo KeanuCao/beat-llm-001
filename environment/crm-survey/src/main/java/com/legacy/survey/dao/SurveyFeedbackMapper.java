@@ -34,4 +34,11 @@ public interface SurveyFeedbackMapper {
 
     /** 某道反馈题的选项明细 (多选时多行) */
     List<SurveyFeedbackOption> selectOptionsByFeedbackQuestionId(@Param("feedbackQuestionId") long feedbackQuestionId);
+
+    /** 重答清理: 只清这个邀请码自己的反馈数据, 顺序必须 选项 -> 题目 -> 反馈 */
+    int deleteOptionsByInviteUuid(@Param("inviteUuid") String inviteUuid);
+
+    int deleteQuestionsByInviteUuid(@Param("inviteUuid") String inviteUuid);
+
+    int deleteFeedbackByInviteUuid(@Param("inviteUuid") String inviteUuid);
 }

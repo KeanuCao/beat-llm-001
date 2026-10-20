@@ -146,6 +146,13 @@ public class SurveyAnswerAction extends Action {
 
             // 反馈主记录: 谁答了哪份问卷
             SurveyFeedbackMapper feedbackMapper = session.getMapper(SurveyFeedbackMapper.class);
+
+            // 2016-11-20 ywang: 运维把已答状态改回去过, 有人重新提交造成一人多条反馈。
+            // 老规矩先删后插, 只清这个邀请码自己的, 别的受访者的数据一概不许碰
+            feedbackMapper.deleteOptionsByInviteUuid(invite.getUuid());
+            feedbackMapper.deleteQuestionsByInviteUuid(invite.getUuid());
+            feedbackMapper.deleteFeedbackByInviteUuid(invite.getUuid());
+
             SurveyFeedback feedback = new SurveyFeedback();
             feedback.setInviteUuid(invite.getUuid());
             feedback.setSurveyId(invite.getSurveyId());

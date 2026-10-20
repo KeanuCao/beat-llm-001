@@ -48,4 +48,20 @@
          ORDER BY id
     </select>
 
+    <!-- 一个人只留一份反馈: 重交时先按邀请码清旧的 (从子到父) -->
+    <delete id="deleteOptionsByInviteUuid">
+        DELETE FROM survey_feedback_option WHERE feedback_question_id IN (
+            SELECT id FROM survey_feedback_question WHERE feedback_id IN (
+                SELECT id FROM survey_feedback WHERE invite_uuid = #{inviteUuid}))
+    </delete>
+
+    <delete id="deleteQuestionsByInviteUuid">
+        DELETE FROM survey_feedback_question WHERE feedback_id IN (
+            SELECT id FROM survey_feedback WHERE invite_uuid = #{inviteUuid})
+    </delete>
+
+    <delete id="deleteFeedbackByInviteUuid">
+        DELETE FROM survey_feedback WHERE invite_uuid = #{inviteUuid}
+    </delete>
+
 </mapper>
