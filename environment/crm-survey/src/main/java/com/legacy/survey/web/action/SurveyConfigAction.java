@@ -16,6 +16,7 @@ import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
 import com.legacy.survey.Answer;
+import com.legacy.survey.BaseSurveyItem;
 import com.legacy.survey.Question;
 import com.legacy.survey.dao.MyBatisUtil;
 import com.legacy.survey.dao.SurveyQuestionMapper;
@@ -68,6 +69,7 @@ public class SurveyConfigAction extends Action {
                 }
 
                 // answers[j]: 勾中的选项带 id, 没勾的只有 content
+                List<Answer> answers = new ArrayList<Answer>();
                 for (int j = 0; ; j++) {
                     String optionPrefix = prefix + ".answers[" + j + "]";
                     String content = request.getParameter(optionPrefix + ".content");
@@ -82,7 +84,10 @@ public class SurveyConfigAction extends Action {
                         a.setId(0);
                     }
                     a.setContent(content == null ? "" : content);
-                    q.getAnswers().add(a);
+                    answers.add(a);
+                }
+                for (int k = 0; k < answers.size(); k++) {
+                    q.setAnswers(k, answers.get(k));
                 }
                 questions.add(q);
             }
@@ -120,7 +125,11 @@ public class SurveyConfigAction extends Action {
 
                 // 选项跟着题目一起入库
                 int optionSort = 1;
-                for (Answer answer : q.getAnswers()) {
+                for (BaseSurveyItem item : q.getAnswers()) {
+                    if (!(item instanceof Answer)) {
+                        continue;
+                    }
+                    Answer answer = (Answer) item;
                     String content = answer.getContent() == null ? "" : answer.getContent().trim();
                     if (content.length() == 0) {
                         continue;

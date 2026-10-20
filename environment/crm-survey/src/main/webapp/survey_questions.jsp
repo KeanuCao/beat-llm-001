@@ -60,7 +60,7 @@
         </td>
         <td>${q.text}</td>
         <td>
-            <c:forEach var="opt" items="${q.answers}" varStatus="st">${st.index > 0 ? '<br/>' : ''}${opt.content}</c:forEach>
+            <c:forEach var="opt" items="${optionsByQuestionId[q.id]}" varStatus="st">${st.index > 0 ? '<br/>' : ''}${opt.content}</c:forEach>
             <c:if test="${q.type == 2}">(自由作答)</c:if>
         </td>
     </tr>

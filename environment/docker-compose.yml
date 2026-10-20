@@ -35,6 +35,8 @@ services:
       DB_HOST: "db"
       DB_PORT: "3306"
       TZ: "Asia/Shanghai"
+      # 7=JDK 1.7.0_80, 8=JDK 1.8 (默认); 切换只重建容器, 不重建镜像
+      JDK_VERSION: "${JDK_VERSION:-8}"
     ports:
       - "8080:8080"
     volumes:

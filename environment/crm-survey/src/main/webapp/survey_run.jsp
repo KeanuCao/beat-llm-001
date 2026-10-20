@@ -24,14 +24,14 @@
         <c:if test="${q.isRequired == 1}"><span style="color: red;">*</span></c:if>
         <c:choose>
             <c:when test="${q.type == 1}">
-                <c:forEach var="opt" items="${q.answers}">
+                <c:forEach var="opt" items="${optionsByQuestionId[q.id]}">
                     <div class="option">
                         <label><input type="radio" name="q_${q.id}" value="${opt.id}" onclick="singlePick(this)"/> ${opt.content}</label>
                     </div>
                 </c:forEach>
             </c:when>
             <c:when test="${q.type == 2}">
-                <c:forEach var="opt" items="${q.answers}">
+                <c:forEach var="opt" items="${optionsByQuestionId[q.id]}">
                     <div class="option">
                         <label><input type="checkbox" name="q_${q.id}" value="${opt.id}"/> ${opt.content}</label>
                     </div>
@@ -58,7 +58,13 @@
 </html>
 <script type="text/javascript">
     function singlePick(input) {
-        var box = input.parentNode.parentNode;
+        var box = input.parentNode;
+        while (box && box.className != "question") {
+            box = box.parentNode;
+        }
+        if (!box) {
+            return;
+        }
         var inputs = box.getElementsByTagName("input");
         for (var i = 0; i < inputs.length; i++) {
             if (inputs[i] != input && inputs[i].type == "radio") {

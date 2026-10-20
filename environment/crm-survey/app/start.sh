@@ -7,6 +7,17 @@ export JAVA_OPTS="$JAVA_OPTS -Dfile.encoding=UTF-8"
 
 set -e
 
+# 选择 JDK: JDK_VERSION=7|8 (默认 7), 切换只需重建容器, 不用重建镜像
+JDK_VERSION=${JDK_VERSION:-7}
+if [ "$JDK_VERSION" = "8" ]; then
+    export JAVA_HOME=${JAVA_HOME_8:-/usr/lib/jvm/java-1.8.0-openjdk}
+else
+    export JAVA_HOME=${JAVA_HOME_7:-/usr/local/jdk1.7.0_80}
+fi
+export PATH="$JAVA_HOME/bin:$PATH"
+echo ">>> 使用 JDK $JDK_VERSION: $JAVA_HOME"
+"$JAVA_HOME/bin/java" -version 2>&1 || true
+
 DB_HOST=${DB_HOST:-db}
 DB_PORT=${DB_PORT:-3306}
 

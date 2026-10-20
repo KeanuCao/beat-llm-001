@@ -29,8 +29,8 @@ public final class LegacyBeanConverter {
         try {
             BeanUtils.populate(target, map);
         } catch (Exception e) {
-            // 灌不进去就先跳过, 别让页面挂掉
             logger.warn("[WARN] Bean populate failed");
+            return;
         }
     }
 }

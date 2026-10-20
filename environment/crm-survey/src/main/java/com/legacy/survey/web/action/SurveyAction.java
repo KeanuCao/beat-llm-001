@@ -3,7 +3,9 @@ package com.legacy.survey.web.action;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -130,9 +132,7 @@ public class SurveyAction extends DispatchAction {
                 return redirectWithMsg("/survey.do?method=list", "问卷不存在");
             }
             List<Question> questions = questionMapper.selectBySurveyId(surveyId);
-            for (Question q : questions) {
-                q.setAnswers(questionMapper.selectOptionsByQuestionId(q.getId()));
-            }
+            request.setAttribute("optionsByQuestionId", loadOptions(questionMapper, questions));
             request.setAttribute("survey", survey);
             request.setAttribute("questions", questions);
             request.setAttribute("nextSort", questionMapper.countBySurveyId(surveyId) + 1);
@@ -246,9 +246,7 @@ public class SurveyAction extends DispatchAction {
                 return redirectWithMsg("/survey.do?method=list", "问卷不存在");
             }
             List<Question> questions = questionMapper.selectBySurveyId(surveyId);
-            for (Question q : questions) {
-                q.setAnswers(questionMapper.selectOptionsByQuestionId(q.getId()));
-            }
+            request.setAttribute("optionsByQuestionId", loadOptions(questionMapper, questions));
             request.setAttribute("survey", survey);
             request.setAttribute("questions", questions);
         } finally {
@@ -348,6 +346,25 @@ public class SurveyAction extends DispatchAction {
             session.close();
         }
         return redirectWithMsg("/survey.do?method=list", "已删除");
+    }
+
+    /** DTO 的 setAnswers 是索引式写入, 这里把查出来的选项逐个塞进去 */
+    private static void fillAnswers(Question question, List<Answer> options) {
+        for (int i = 0; i < options.size(); i++) {
+            question.setAnswers(i, options.get(i));
+        }
+    }
+
+    /** JSP 不直接读 q.answers (数组 getter 会抛 ClassCastException), 按题目 ID 单独给一份选项 */
+    private static Map<Long, List<Answer>> loadOptions(SurveyQuestionMapper questionMapper,
+            List<Question> questions) {
+        Map<Long, List<Answer>> optionsByQuestionId = new HashMap<Long, List<Answer>>();
+        for (Question q : questions) {
+            List<Answer> options = questionMapper.selectOptionsByQuestionId(q.getId());
+            fillAnswers(q, options);
+            optionsByQuestionId.put(Long.valueOf(q.getId()), options);
+        }
+        return optionsByQuestionId;
     }
 
     private ActionForward redirectWithMsg(String target, String msg) throws Exception {

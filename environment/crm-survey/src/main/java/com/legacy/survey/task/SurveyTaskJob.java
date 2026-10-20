@@ -37,7 +37,7 @@ public class SurveyTaskJob implements Runnable {
                     process(session, task);
                     taskMapper.markDone(task.getId());
                 } catch (Exception e) {
-                    logger.error("[ERROR] survey task " + task.getId() + " failed");
+                    logger.error("[ERROR] survey task " + task.getId() + " failed", e);
                     taskMapper.markFailed(task.getId(), e.getMessage() == null ? "unknown" : e.getMessage());
                 }
             }

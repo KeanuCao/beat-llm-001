@@ -27,21 +27,20 @@ public class SurveyDTO extends BaseSurveyItem {
         this.surveyName = surveyName;
     }
 
-    public void setQuestions(List<Question> questions) {
-        this.questions = questions;
+    public void setQuestions(int index, Question question) {
+        this.questions.add(question);
     }
 
-    /**
-     * 返回题目数组
-     */
     public Question[] getQuestions() {
-        return (Question[]) questions.toArray();
+        return questions.toArray(new Question[questions.size()]);
     }
 
-    /**
-     * 返回指定位置的题目
-     */
     public Question getQuestions(int index) {
-        return questions.get(index);
+        while (this.questions.size() <= index) {
+            this.questions.add(new Question());
+        }
+        return this.questions.get(index);
     }
+
+
 }

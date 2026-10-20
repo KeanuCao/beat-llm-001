@@ -18,8 +18,10 @@ import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
 import com.legacy.survey.Answer;
+import com.legacy.survey.BaseSurveyItem;
 import com.legacy.survey.LegacyBeanConverter;
 import com.legacy.survey.Question;
+import com.legacy.survey.Survey;
 import com.legacy.survey.SurveyFeedback;
 import com.legacy.survey.SurveyFeedbackDTO;
 import com.legacy.survey.SurveyFeedbackOption;
@@ -28,11 +30,12 @@ import com.legacy.survey.SurveyInvite;
 import com.legacy.survey.dao.MyBatisUtil;
 import com.legacy.survey.dao.SurveyFeedbackMapper;
 import com.legacy.survey.dao.SurveyInviteMapper;
+import com.legacy.survey.dao.SurveyMapper;
 import com.legacy.survey.dao.SurveyQuestionMapper;
 import com.legacy.survey.util.MaskUtil;
 
 /**
- * 受访者作答: 邮件链接进来 (uuid), 作答时必须填邮箱, 后端校验掩码匹配
+ * 受访者作答: 邮件链接进来
  *
  * @author crm-dev
  * @since 2016-11-13
@@ -84,9 +87,16 @@ public class SurveyAnswerAction extends Action {
 
             SurveyQuestionMapper questionMapper = session.getMapper(SurveyQuestionMapper.class);
             List<Question> questions = questionMapper.selectBySurveyId(invite.getSurveyId());
+            Map<Long, List<Answer>> optionsByQuestionId = new HashMap<Long, List<Answer>>();
             for (Question q : questions) {
-                q.setAnswers(questionMapper.selectOptionsByQuestionId(q.getId()));
+                List<Answer> options = questionMapper.selectOptionsByQuestionId(q.getId());
+                for (int i = 0; i < options.size(); i++) {
+                    q.setAnswers(i, options.get(i));
+                }
+                optionsByQuestionId.put(Long.valueOf(q.getId()), options);
             }
+            request.setAttribute("optionsByQuestionId", optionsByQuestionId);
+            request.setAttribute("survey", session.getMapper(SurveyMapper.class).selectById(invite.getSurveyId()));
             request.setAttribute("invite", invite);
             request.setAttribute("questions", questions);
         } finally {
@@ -95,7 +105,7 @@ public class SurveyAnswerAction extends Action {
         return new ActionForward("/survey_answer.jsp");
     }
 
-    /** 提交作答: 表单先绑成 SurveyFeedbackDTO (和后台配置一个路数), 邮箱掩码必须匹配 */
+    /** 提交作答: 邮箱掩码必须匹配 */
     private ActionForward submit(HttpServletRequest request) {
         // 整单打印表单内容, 排障用
         dumpForm(request);
@@ -110,7 +120,6 @@ public class SurveyAnswerAction extends Action {
         }
         String email = trim(dto.getEmail());
         if (email.length() == 0) {
-            // 邮箱是核对身份的, 绑定丢了就从请求里兜底拿
             email = trim(request.getParameter("email"));
         }
         if (token.length() == 0) {
@@ -131,12 +140,10 @@ public class SurveyAnswerAction extends Action {
                 return alreadyAnswered(request);
             }
 
-            // 关卡: 输入的邮箱算出来的掩码必须和邀请里存的一致
             if (!MaskUtil.mask(email).equals(invite.getEmailMask())) {
                 return globalError(request, "邮件地址与本次邀请不匹配");
             }
 
-            // 库里有这道题才算数 (防乱编 id)
             SurveyQuestionMapper questionMapper = session.getMapper(SurveyQuestionMapper.class);
             List<Question> dbQuestions = questionMapper.selectBySurveyId(invite.getSurveyId());
             Map<Long, Question> questionMap = new HashMap<Long, Question>();
@@ -159,14 +166,9 @@ public class SurveyAnswerAction extends Action {
             feedback.setEmail(email);
             feedbackMapper.insertFeedback(feedback);
 
-            // 逐题往下取, 取到头为止 (和配置保存一个路数)
-            for (int i = 0; ; i++) {
-                Question q;
-                try {
-                    q = dto.getQuestions(i);
-                } catch (IndexOutOfBoundsException e) {
-                    break;
-                }
+            // 已经灌成 DTO, 直接遍历 DTO 里的题目/选项数组
+            Question[] dtoQuestions = dto.getQuestions();
+            for (Question q : dtoQuestions) {
                 if (q == null || q.getId() <= 0 || !questionMap.containsKey(Long.valueOf(q.getId()))) {
                     continue;
                 }
@@ -180,9 +182,12 @@ public class SurveyAnswerAction extends Action {
                 if (q.getType() == 1) {
                     // 选择式: 勾中的选项 (id>0) 才算; 以后多选就是多行选项
                     List<Answer> chosenList = new ArrayList<Answer>();
-                    for (Answer a : q.getAnswers()) {
-                        if (a != null && a.getId() > 0) {
-                            chosenList.add(a);
+                    for (BaseSurveyItem item : q.getAnswers()) {
+                        if (item instanceof Answer) {
+                            Answer a = (Answer) item;
+                            if (a.getId() > 0) {
+                                chosenList.add(a);
+                            }
                         }
                     }
                     if (chosenList.isEmpty()) {
@@ -198,8 +203,9 @@ public class SurveyAnswerAction extends Action {
                     }
                 } else {
                     // 开放式: 作答文本直接快照在题目行上
-                    if (q.getAnswers().size() > 0 && q.getAnswers().get(0) != null) {
-                        fq.setAnswerContent(q.getAnswers().get(0).getContent());
+                    BaseSurveyItem[] answers = q.getAnswers();
+                    if (answers.length > 0 && answers[0] instanceof Answer) {
+                        fq.setAnswerContent(((Answer) answers[0]).getContent());
                     }
                     feedbackMapper.insertFeedbackQuestion(fq);
                 }

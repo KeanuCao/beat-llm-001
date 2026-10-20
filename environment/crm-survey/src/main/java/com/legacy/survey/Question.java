@@ -19,6 +19,7 @@ public class Question extends BaseSurveyItem {
     /** 题目下的回答/选项 */
     private List<Answer> answers = new ArrayList<Answer>();
 
+
     /** 是否必答: 0-否 1-是 */
     private int isRequired;
 
@@ -36,12 +37,19 @@ public class Question extends BaseSurveyItem {
         this.text = text;
     }
 
-    public List<Answer> getAnswers() {
-        return answers;
+    public BaseSurveyItem[] getAnswers() {
+        return answers.toArray(new BaseSurveyItem[answers.size()]);
     }
 
-    public void setAnswers(List<Answer> answers) {
-        this.answers = answers;
+    public Answer getAnswers(int index) {
+        while (this.answers.size() <= index) {
+            this.answers.add(new Answer());
+        }
+        return this.answers.get(index);
+    }
+
+	public void setAnswers(int index, Answer answer) {
+        this.answers.add(answer);
     }
 
     public int getIsRequired() {

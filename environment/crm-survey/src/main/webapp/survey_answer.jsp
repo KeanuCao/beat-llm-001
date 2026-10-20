@@ -12,9 +12,15 @@
         .option { margin: 4px 0; }
     </style>
     <script type="text/javascript">
-        // 单选题: 选一个就得把兄弟选项松开 (每个选项是独立的 radio, 名字带下标)
+        // 单选题: 每个选项是独立 radio (名字带下标), 靠 JS 保证同题只选一个
         function singlePick(input) {
-            var box = input.parentNode.parentNode;
+            var box = input.parentNode;
+            while (box && box.className != "question") {
+                box = box.parentNode;
+            }
+            if (!box) {
+                return;
+            }
             var inputs = box.getElementsByTagName("input");
             for (var i = 0; i < inputs.length; i++) {
                 if (inputs[i] != input && inputs[i].type == "radio") {
@@ -52,7 +58,7 @@
         <c:if test="${q.isRequired == 1}"><span style="color: red;">*</span></c:if>
         <c:choose>
             <c:when test="${q.type == 1}">
-                <c:forEach var="opt" items="${q.answers}" varStatus="oj">
+                <c:forEach var="opt" items="${optionsByQuestionId[q.id]}" varStatus="oj">
                     <div class="option">
                         <input type="hidden" name="questions[${st.index}].answers[${oj.index}].content" value="${opt.content}"/>
                         <label><input type="radio" name="questions[${st.index}].answers[${oj.index}].id" value="${opt.id}" onclick="singlePick(this)"/> ${opt.content}</label>
@@ -60,7 +66,7 @@
                 </c:forEach>
             </c:when>
             <c:when test="${q.type == 2}">
-                <c:forEach var="opt" items="${q.answers}" varStatus="oj">
+                <c:forEach var="opt" items="${optionsByQuestionId[q.id]}" varStatus="oj">
                     <div class="option">
                         <input type="hidden" name="questions[${st.index}].answers[${oj.index}].content" value="${opt.content}"/>
                         <label><input type="checkbox" name="questions[${st.index}].answers[${oj.index}].id" value="${opt.id}"/> ${opt.content}</label>
