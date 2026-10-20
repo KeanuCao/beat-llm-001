@@ -11,6 +11,18 @@
         .question { margin: 12px 0; }
         .option { margin: 4px 0; }
     </style>
+    <script type="text/javascript">
+        // 单选题: 选一个就得把兄弟选项松开 (每个选项是独立的 radio, 名字带下标)
+        function singlePick(input) {
+            var box = input.parentNode.parentNode;
+            var inputs = box.getElementsByTagName("input");
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i] != input && inputs[i].type == "radio") {
+                    inputs[i].checked = false;
+                }
+            }
+        }
+    </script>
 </head>
 <body>
 
@@ -43,7 +55,7 @@
                 <c:forEach var="opt" items="${q.answers}" varStatus="oj">
                     <div class="option">
                         <input type="hidden" name="questions[${st.index}].answers[${oj.index}].content" value="${opt.content}"/>
-                        <label><input type="radio" name="questions[${st.index}].answers[${oj.index}].id" value="${opt.id}"/> ${opt.content}</label>
+                        <label><input type="radio" name="questions[${st.index}].answers[${oj.index}].id" value="${opt.id}" onclick="singlePick(this)"/> ${opt.content}</label>
                     </div>
                 </c:forEach>
             </c:when>

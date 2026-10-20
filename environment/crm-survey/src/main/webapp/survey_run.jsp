@@ -26,7 +26,7 @@
             <c:when test="${q.type == 1}">
                 <c:forEach var="opt" items="${q.answers}">
                     <div class="option">
-                        <label><input type="radio" name="q_${q.id}" value="${opt.id}"/> ${opt.content}</label>
+                        <label><input type="radio" name="q_${q.id}" value="${opt.id}" onclick="singlePick(this)"/> ${opt.content}</label>
                     </div>
                 </c:forEach>
             </c:when>
@@ -56,3 +56,14 @@
 
 </body>
 </html>
+<script type="text/javascript">
+    function singlePick(input) {
+        var box = input.parentNode.parentNode;
+        var inputs = box.getElementsByTagName("input");
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i] != input && inputs[i].type == "radio") {
+                inputs[i].checked = false;
+            }
+        }
+    }
+</script>

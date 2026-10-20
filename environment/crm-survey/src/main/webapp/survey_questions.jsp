@@ -88,7 +88,7 @@
             <td>
                 <select name="questions[0].type">
                     <option value="1">单选</option>
-                    <option value="2">多选</option>
+                    <%-- 多选题先不放开入口, 后端能力保留 --%>
                     <option value="3">开放式</option>
                 </select>
             </td>

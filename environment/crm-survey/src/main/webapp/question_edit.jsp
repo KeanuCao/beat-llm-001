@@ -47,8 +47,7 @@
             <td>
                 <input type="radio" name="questionType" id="typeSingle" value="1"
                        onclick="toggleOptions()" ${question.type == 1 or empty question ? 'checked' : ''}/> 单选
-                <input type="radio" name="questionType" id="typeMulti" value="2"
-                       onclick="toggleOptions()" ${question.type == 2 ? 'checked' : ''}/> 多选
+                <%-- 多选题先不放开入口, 后端能力保留 --%>
                 <input type="radio" name="questionType" id="typeOpen" value="3"
                        onclick="toggleOptions()" ${question.type == 3 ? 'checked' : ''}/> 开放式
             </td>
