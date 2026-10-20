@@ -4,9 +4,9 @@ import java.util.Map;
 
 import org.apache.commons.beanutils.BeanUtils;
 
-public final class LegacyBeanConverter {
+public final class SuperBeanConverter {
 
-    private LegacyBeanConverter() {
+    private SuperBeanConverter() {
     }
 
     public static void populate(Object target, Map<String, Object> map) {

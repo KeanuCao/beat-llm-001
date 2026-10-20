@@ -19,7 +19,7 @@ import org.apache.struts.action.ActionMapping;
 
 import com.legacy.survey.Answer;
 import com.legacy.survey.BaseSurveyItem;
-import com.legacy.survey.LegacyBeanConverter;
+import com.legacy.survey.SuperBeanConverter;
 import com.legacy.survey.Question;
 import com.legacy.survey.Survey;
 import com.legacy.survey.SurveyFeedback;
@@ -112,7 +112,7 @@ public class SurveyAnswerAction extends Action {
 
         Map<String, Object> params = toParamMap(request);
         SurveyFeedbackDTO dto = new SurveyFeedbackDTO();
-        LegacyBeanConverter.populate(dto, params);
+        SuperBeanConverter.populate(dto, params);
 
         String token = trim(request.getParameter("t"));
         if (token.length() == 0) {
