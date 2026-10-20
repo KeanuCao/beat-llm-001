@@ -1,8 +1,8 @@
 package com.legacy.survey.web.action;
 
 import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -16,9 +16,7 @@ import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
 import com.legacy.survey.Answer;
-import com.legacy.survey.LegacyBeanConverter;
 import com.legacy.survey.Question;
-import com.legacy.survey.SurveyDTO;
 import com.legacy.survey.dao.MyBatisUtil;
 import com.legacy.survey.dao.SurveyQuestionMapper;
 
@@ -36,7 +34,7 @@ public class SurveyConfigAction extends Action {
     public ActionForward execute(ActionMapping mapping, ActionForm form,
             HttpServletRequest request, HttpServletResponse response) throws Exception {
         try {
-            // surveyId 直接从请求取, 不依赖 populate (嵌套参数一炸, id 可能都没灌上)
+            // 这段后来重写过, 没走老的灌数工具, 参数手工逐层解析 (稳)
             long surveyId;
             try {
                 surveyId = Long.parseLong(request.getParameter("id"));
@@ -44,13 +42,52 @@ public class SurveyConfigAction extends Action {
                 surveyId = 0;
             }
 
-            Map<String, Object> params = toParamMap(request);
+            List<Question> questions = new ArrayList<Question>();
+            for (int i = 0; ; i++) {
+                String prefix = "questions[" + i + "]";
+                String idStr = request.getParameter(prefix + ".id");
+                if (idStr == null) {
+                    break;
+                }
+                Question q = new Question();
+                try {
+                    q.setId(Long.parseLong(idStr));
+                } catch (NumberFormatException e) {
+                    q.setId(0);
+                }
+                try {
+                    q.setType(Integer.parseInt(request.getParameter(prefix + ".type")));
+                } catch (NumberFormatException e) {
+                    q.setType(1);
+                }
+                q.setText(trim(request.getParameter(prefix + ".text")));
+                try {
+                    q.setSort(Integer.parseInt(request.getParameter(prefix + ".sort")));
+                } catch (NumberFormatException e) {
+                    q.setSort(0);
+                }
 
-            SurveyDTO dto = new SurveyDTO();
-            dto.setId(surveyId);
-            LegacyBeanConverter.populate(dto, params);
+                // answers[j]: 勾中的选项带 id, 没勾的只有 content
+                for (int j = 0; ; j++) {
+                    String optionPrefix = prefix + ".answers[" + j + "]";
+                    String content = request.getParameter(optionPrefix + ".content");
+                    String optionIdStr = request.getParameter(optionPrefix + ".id");
+                    if (content == null && optionIdStr == null) {
+                        break;
+                    }
+                    Answer a = new Answer();
+                    try {
+                        a.setId(optionIdStr == null ? 0 : Long.parseLong(optionIdStr));
+                    } catch (NumberFormatException e) {
+                        a.setId(0);
+                    }
+                    a.setContent(content == null ? "" : content);
+                    q.getAnswers().add(a);
+                }
+                questions.add(q);
+            }
 
-            saveQuestions(dto);
+            saveQuestions(surveyId, questions);
 
             // 保存完 PRG 回题目设置页 (防重复提交, 2006 年的教条)
             // 注意: forward 的 path 是 module-relative, struts 会自己补 contextPath
@@ -64,39 +101,23 @@ public class SurveyConfigAction extends Action {
     }
 
     /**
-     * request 参数表转成普通 Map。
-     * questions[0].id 这种嵌套参数的 key 原样保留, populate 那边自己会解析路径
-     */
-    private Map<String, Object> toParamMap(HttpServletRequest request) {
-        Map<String, String[]> raw = request.getParameterMap();
-        Map<String, Object> params = new HashMap<String, Object>();
-        for (Map.Entry<String, String[]> entry : raw.entrySet()) {
-            String[] values = entry.getValue();
-            if (values.length == 1) {
-                params.put(entry.getKey(), values[0]);
-            } else {
-                params.put(entry.getKey(), values);
-            }
-        }
-        return params;
-    }
-
-    /**
      * 题目逐条入库 (survey_question / survey_question_option)
      */
-    private void saveQuestions(SurveyDTO dto) {
+    private void saveQuestions(long surveyId, List<Question> questions) {
         SqlSession session = MyBatisUtil.openSession();
         try {
             SurveyQuestionMapper mapper = session.getMapper(SurveyQuestionMapper.class);
-            // 逐条往下取, 取到头为止
-            for (int i = 0; ; i++) {
-                Question q;
-                try {
-                    q = dto.getQuestions(i);
-                } catch (IndexOutOfBoundsException e) {
-                    break;
+            for (Question q : questions) {
+                String text = q.getText() == null ? "" : q.getText().trim();
+                if (text.length() == 0) {
+                    continue;
                 }
-                mapper.insertQuestion(dto.getId(), 0, q);
+                Question row = new Question();
+                row.setType(q.getType());
+                row.setText(text);
+                row.setSort(q.getSort());
+                mapper.insertQuestion(surveyId, 0, row);
+
                 // 选项跟着题目一起入库
                 int optionSort = 1;
                 for (Answer answer : q.getAnswers()) {
@@ -104,12 +125,16 @@ public class SurveyConfigAction extends Action {
                     if (content.length() == 0) {
                         continue;
                     }
-                    mapper.insertOption(q.getId(), 0, content, optionSort++);
+                    mapper.insertOption(row.getId(), 0, content, optionSort++);
                 }
             }
             session.commit();
         } finally {
             session.close();
         }
+    }
+
+    private static String trim(String s) {
+        return s == null ? "" : s.trim();
     }
 }

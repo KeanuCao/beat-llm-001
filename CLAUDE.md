@@ -59,12 +59,15 @@ curl -s -b /tmp/cj -X POST http://localhost:8080/crm-survey/surveyConfig.do \
 请求链路：
 
 ```
-页面表单（题目设置页的自定义题目 / 题面的 HTTP 模拟）
+admin 配置链（surveyConfig.do，题目设置页的自定义题目 / 题面的 HTTP 模拟）
   → CsrfFilter (/*)：GET 在 session 里生成 CSRF_TOKEN；POST 必须带同名 csrfToken 参数，否则 403
-  → ActionServlet (*.do) → SurveyConfigAction
-  → LegacyBeanConverter → commons-beanutils 按 questions[0].answers[1].content 这类嵌套路径灌入 SurveyDTO
-  → SurveyQuestionMapper (MyBatis 3.2.8 接口 + mapper XML)
-  → MySQL
+  → ActionServlet (*.do) → SurveyConfigAction → 参数手工逐层解析（后来重写的，不走灌数工具，不会丢）
+  → SurveyQuestionMapper (MyBatis 3.2.8 接口 + mapper XML) → MySQL
+
+受访者链（surveyAnswer.do，邮件链接 t=uuid 进来）
+  → CsrfFilter → SurveyAnswerAction
+  → LegacyBeanConverter → commons-beanutils 按 questions[0].answers[0].content 这类嵌套路径灌入 SurveyFeedbackDTO（extends SurveyDTO）
+  → 快照三表 survey_feedback / survey_feedback_question / survey_feedback_option
 ```
 
 要点：
@@ -76,14 +79,14 @@ curl -s -b /tmp/cj -X POST http://localhost:8080/crm-survey/surveyConfig.do \
 
 ## 当前进度与已知不一致（写测试/参考解前必看）
 
-1. **`solution/solve.sh`、`tests/test.sh` 和 `task.toml` 的 `[metadata]` 还是最初物理题的残留**：solve.sh 在改 `/app/simulation.py`，test.sh 在跑 `python3 /app/simulation.py` 并 grep `13.6|121.567`，metadata 是 `physics-coding`/`quantum-mechanics`。与 CRM 题完全不符，验收逻辑需要按题面重写（HTTP 提交后行数 2/6、连续 10 次 20/60、页面 `saved=1`、`bugs/` 下五节 bug 单）。
+1. **`solution/solve.sh`、`tests/test.sh` 和 `task.toml` 的 `[metadata]` 还是最初物理题的残留**：solve.sh 在改 `/app/simulation.py`，test.sh 在跑 `python3 /app/simulation.py` 并 grep `13.6|121.567`，metadata 是 `physics-coding`/`quantum-mechanics`。与 CRM 题完全不符，验收逻辑需要按题面重写。**注意判分点必须放在受访者链**（模拟受访者提交 → 校验 survey_feedback / survey_feedback_question / survey_feedback_option 行数 + bug 单）——admin 配置链已经改稳，不能再当判分点，否则不修 bug 也能得分。
 2. （已对齐）题面不再引用具名问卷，改为"干净环境自行复现 E2E"；`schema.sql` 种子保持干净即可。
 3. （已对齐）入口与链接统一到 `/crm-survey` 上下文：后台入口 `/crm-survey/login.jsp`，提交端点 `/crm-survey/surveyConfig.do`，邮件链接与 QC 脚本同前缀。`survey_config.jsp` 独立页已删除；其提交链路 `SurveyConfigAction` 保留——它是题目雷区与验收端点，且已纳入登录守卫。
-4. （已对齐）选项已有落库路径：`insertQuestion`（回填 `q.id`）+ `insertOption`，题库选入/自定义题目/受访者作答均已实测落库。题型为 1-选择式 / 2-开放式，不存在 type=3。
+4. （已对齐）admin 配置链（`surveyConfig.do`）改手工解析后**不再丢数据**，题库选入/自定义题目实测落库；**受访者作答链走 `LegacyBeanConverter` 绑定（见第 5 条埋点），修复前会静默丢题**。题型为 1-选择式 / 2-开放式，不存在 type=3。
 5. 关键代码可疑点（疑似故意埋点，参考解和测试前先确认）：
-   - `SurveyDTO.getQuestions()` 是 `(Question[]) questions.toArray()`，`toArray()` 返回 `Object[]`，运行期会 `ClassCastException`；同时与 `getQuestions(int)` 重载影响 JavaBean 内省。
-   - `LegacyBeanConverter.populate` 捕获所有异常后只打一条 WARN，参数绑定失败会静默丢数据。
-   - `saveQuestions` 只捕获 `IndexOutOfBoundsException` 作为循环终止条件。
+   - `SurveyDTO.getQuestions()` 是 `(Question[]) questions.toArray()`，`toArray()` 返回 `Object[]`，运行期会 `ClassCastException`；同时与 `getQuestions(int)` 重载影响 JavaBean 内省。`SurveyFeedbackDTO` 继承了它。
+   - `LegacyBeanConverter.populate` 捕获所有异常后只打一条 WARN，参数绑定失败会静默丢数据——**只有受访者链走这里**（admin 配置链已改手工解析，不触发）。
+   - 受访者提交循环靠 `dto.getQuestions(i)` 抛 `IndexOutOfBoundsException` 终止。
 6. JUnit 依赖已在 `pom.xml`，但 `src/test/java` 不存在；本仓库没有单测。`tests/` 是评测脚本目录，不是 JUnit 目录。
 7. `bugs/` 是解题模型的交付目录（`BUG-<日期>-<序号>.md`，含标题/复现步骤/根本原因/影响范围/修复方案五节），当前仓库中没有。
 
