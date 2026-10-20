@@ -74,8 +74,13 @@ public final class MailUtil {
 
         boolean ssl = "true".equalsIgnoreCase(CONFIG.getProperty("mail.smtp.ssl", "false"));
         if (ssl) {
+            // 465 这种隐式 SSL 端口: 全程 SSL, 失败就失败, 不许悄悄降级明文
             props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.put("mail.smtp.socketFactory.port", props.getProperty("mail.smtp.port"));
+            props.put("mail.smtp.socketFactory.fallback", "false");
+            props.put("mail.smtp.ssl.enable", "true");
+            // 网易系和新 JDK 的 TLS1.3 hello 犯冲, 钉死 1.2, 实测必配
+            props.put("mail.smtp.ssl.protocols", CONFIG.getProperty("mail.smtp.ssl.protocols", "TLSv1.2"));
         }
 
         Session session;
