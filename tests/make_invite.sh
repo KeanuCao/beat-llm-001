@@ -38,21 +38,37 @@ if [ -z "$UUID" ]; then
     exit 1
 fi
 
-# ---------- 算掩码: 优先本机 openssl, 不行借 db 容器里的 openssl ----------
+# ---------- 算掩码: 本机 openssl (兼容 1.x/3.x) -> 借 db 容器 -> 应用自带 MaskUtil ----------
 mask_by_openssl() {
     printf '%s' "$EMAIL" | openssl enc -des-ecb -K "$KEY_HEX" -nosalt 2>/dev/null | od -An -tx1 | tr -d ' \n'
+}
+mask_by_openssl3() {
+    printf '%s' "$EMAIL" | openssl enc -des-ecb -K "$KEY_HEX" -nosalt -provider legacy -provider default 2>/dev/null | od -An -tx1 | tr -d ' \n'
 }
 mask_by_docker() {
     docker exec crm-mysql sh -c \
         "printf '%s' '$EMAIL' | openssl enc -des-ecb -K $KEY_HEX -nosalt | od -An -tx1 | tr -d ' \n'" 2>/dev/null
 }
+mask_by_java() {
+    # 用应用自己编译出来的 MaskUtil, 保证逐字节一致
+    for CL in "${CLASSES_DIR:-}" \
+              "$(dirname "$0")/../environment/crm-survey/target/classes" \
+              "$(dirname "$0")/../environment/crm-survey/target/crm-survey/WEB-INF/classes"; do
+        if [ -n "$CL" ] && [ -f "$CL/com/legacy/survey/util/MaskUtil.class" ]; then
+            java -cp "$CL" com.legacy.survey.util.MaskUtil "$EMAIL" 2>/dev/null && return
+        fi
+    done
+    return 1
+}
 
 MASK=$(mask_by_openssl || true)
+[ -z "$MASK" ] && MASK=$(mask_by_openssl3 || true)
 if [ -z "$MASK" ] && command -v docker >/dev/null 2>&1; then
     MASK=$(mask_by_docker || true)
 fi
+[ -z "$MASK" ] && MASK=$(mask_by_java || true)
 if [ -z "$MASK" ]; then
-    echo "算掩码失败: 本机没有可用的 openssl (DES 在 openssl 3 里进了 legacy), 且没有 docker 可借 db 容器" >&2
+    echo "算掩码失败: openssl (含 legacy provider)、db 容器、应用 classes 三条路都不通" >&2
     exit 1
 fi
 
@@ -63,7 +79,9 @@ insert_by_docker() {
     docker exec crm-mysql mysql -uroot -proot123 crm_survey -e "$SQL"
 }
 insert_by_mysql() {
-    mysql -h"${DB_HOST:-db}" -uroot -proot123 crm_survey -e "$SQL"
+    # 用应用账号, 别拿 root (Ubuntu 的 MariaDB root 也不认 TCP 密码)
+    mysql -ucrm -pcrm123 crm_survey -e "$SQL" 2>/dev/null \
+        || mysql -h"${DB_HOST:-db}" -ucrm -pcrm123 crm_survey -e "$SQL"
 }
 
 if command -v docker >/dev/null 2>&1 && docker ps 2>/dev/null | grep -q crm-mysql; then

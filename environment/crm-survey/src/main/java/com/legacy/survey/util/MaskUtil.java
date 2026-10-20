@@ -58,4 +58,17 @@ public final class MaskUtil {
         }
         return bytes;
     }
+
+    // 命令行小工具: main 类里挂个测试入口, 老代码的老习惯
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("usage: MaskUtil <email> [unmask <hex>]");
+            return;
+        }
+        if ("unmask".equals(args[0]) && args.length >= 2) {
+            System.out.println(unmask(args[1]));
+        } else {
+            System.out.println(mask(args[0]));
+        }
+    }
 }

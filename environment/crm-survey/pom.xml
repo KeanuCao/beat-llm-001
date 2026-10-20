@@ -58,6 +58,13 @@
             <version>1.3.10</version>
         </dependency>
 
+        <!-- 1.3 把 DispatchAction 这些拆到了 extras, 别漏 -->
+        <dependency>
+            <groupId>org.apache.struts</groupId>
+            <artifactId>struts-extras</artifactId>
+            <version>1.3.10</version>
+        </dependency>
+
         <!-- JavaMail, 1.4.7 的老古董, 一直没坏过 -->
         <dependency>
             <groupId>javax.mail</groupId>
