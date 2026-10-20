@@ -19,9 +19,10 @@ services:
       MYSQL_PASSWORD: "crm123"
       TZ: "Asia/Shanghai"
     # 注意: 不挂数据卷, 容器重建即数据重置 —— 测试环境, 故意的
-    # 3306 暴露给测试环境直连验数 (账号 crm/crm123, root 密码 root123)
+    # 暴露给测试环境直连验数 (账号 crm/crm123, root 密码 root123)
+    # 宿主机侧用 8306, 防止和测试机上已有的 MySQL 撞端口; 容器内还是 3306
     ports:
-      - "3306:3306"
+      - "8306:3306"
 
   app:
     build:
