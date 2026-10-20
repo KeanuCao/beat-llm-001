@@ -7,14 +7,15 @@ MAINTAINER ci <ci@company.com>
 # 时区
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# CentOS 7 已经停止维护, yum 源切到 vault 归档
+# CentOS 7 已经停止维护, yum 源切到 vault 归档 (走 aliyun 镜像)
 RUN sed -i -e 's|^mirrorlist=|#mirrorlist=|g' \
-           -e 's|^#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' \
+           -e 's|^#baseurl=http://mirror.centos.org|baseurl=https://mirrors.aliyun.com/centos-vault|g' \
            /etc/yum.repos.d/CentOS-*.repo
 
 # JDK 1.8
 RUN yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel \
     && yum clean all && rm -rf /var/cache/yum
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
 
 # Maven 3.3.9 (2015 年的老版本, 解压即用)
 ENV MAVEN_HOME=/usr/local/maven

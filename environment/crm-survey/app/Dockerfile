@@ -9,14 +9,15 @@ MAINTAINER ops <ops@company.com>
 # 时区老规矩, 东八区
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# CentOS 7 已经停止维护, yum 源切到 vault 归档
+# CentOS 7 已经停止维护, yum 源切到 vault 归档 (走 aliyun 镜像)
 RUN sed -i -e 's|^mirrorlist=|#mirrorlist=|g' \
-           -e 's|^#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' \
+           -e 's|^#baseurl=http://mirror.centos.org|baseurl=https://mirrors.aliyun.com/centos-vault|g' \
            /etc/yum.repos.d/CentOS-*.repo
 
 # JDK 1.8 (留全量 JDK, 线上排障要用 jstack/jmap)
 RUN yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel \
     && yum clean all && rm -rf /var/cache/yum
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
 
 # Tomcat 8.5, tarball 解压部署, 老规矩
 ENV CATALINA_HOME=/usr/local/tomcat
