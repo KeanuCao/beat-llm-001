@@ -17,9 +17,11 @@
 <h3>${survey.title} <span style="font-size: 12px; font-weight: normal;">(问卷作答)</span></h3>
 <div>${survey.description}</div>
 
+<%-- 嵌套参数: questions[序号].xxx / answers[序号].xxx, 和后台配置一个路数 --%>
 <form action="${pageContext.request.contextPath}/surveyAnswer.do" method="post">
     <input type="hidden" name="csrfToken" value="${sessionScope.CSRF_TOKEN}"/>
     <input type="hidden" name="t" value="${invite.uuid}"/>
+    <input type="hidden" name="inviteUuid" value="${invite.uuid}"/>
 
     <div class="question">
         <b>您的邮件地址</b> <span style="color: red;">*</span> (用于核对您的邀请身份)
@@ -30,19 +32,25 @@
 
     <c:forEach var="q" items="${questions}" varStatus="st">
     <div class="question">
+        <input type="hidden" name="questions[${st.index}].id" value="${q.id}"/>
+        <input type="hidden" name="questions[${st.index}].type" value="${q.type}"/>
+        <input type="hidden" name="questions[${st.index}].text" value="${q.text}"/>
+
         <b>${st.index + 1}. ${q.text}</b>
         <c:if test="${q.isRequired == 1}"><span style="color: red;">*</span></c:if>
         <c:choose>
             <c:when test="${q.type == 1}">
-                <c:forEach var="opt" items="${q.answers}">
+                <c:forEach var="opt" items="${q.answers}" varStatus="oj">
                     <div class="option">
-                        <label><input type="radio" name="q_${q.id}" value="${opt.id}"/> ${opt.content}</label>
+                        <input type="hidden" name="questions[${st.index}].answers[${oj.index}].content" value="${opt.content}"/>
+                        <label><input type="radio" name="questions[${st.index}].answers[${oj.index}].id" value="${opt.id}"/> ${opt.content}</label>
                     </div>
                 </c:forEach>
             </c:when>
             <c:otherwise>
                 <div class="option">
-                    <textarea name="q_${q.id}" rows="3" cols="60"></textarea>
+                    <input type="hidden" name="questions[${st.index}].answers[0].id" value="0"/>
+                    <textarea name="questions[${st.index}].answers[0].content" rows="3" cols="60"></textarea>
                 </div>
             </c:otherwise>
         </c:choose>

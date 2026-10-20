@@ -1,5 +1,6 @@
 package com.legacy.survey.web.action;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -17,8 +18,10 @@ import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 
 import com.legacy.survey.Answer;
+import com.legacy.survey.LegacyBeanConverter;
 import com.legacy.survey.Question;
 import com.legacy.survey.SurveyFeedback;
+import com.legacy.survey.SurveyFeedbackDTO;
 import com.legacy.survey.SurveyFeedbackOption;
 import com.legacy.survey.SurveyFeedbackQuestion;
 import com.legacy.survey.SurveyInvite;
@@ -92,12 +95,24 @@ public class SurveyAnswerAction extends Action {
         return new ActionForward("/survey_answer.jsp");
     }
 
-    /** 提交作答: 邮箱 + 掩码必须匹配, 不匹配直接 global error */
+    /** 提交作答: 表单先绑成 SurveyFeedbackDTO (和后台配置一个路数), 邮箱掩码必须匹配 */
     private ActionForward submit(HttpServletRequest request) {
         // 整单打印表单内容, 排障用
         dumpForm(request);
+
+        Map<String, Object> params = toParamMap(request);
+        SurveyFeedbackDTO dto = new SurveyFeedbackDTO();
+        LegacyBeanConverter.populate(dto, params);
+
         String token = trim(request.getParameter("t"));
-        String email = trim(request.getParameter("email"));
+        if (token.length() == 0) {
+            token = trim(dto.getInviteUuid());
+        }
+        String email = trim(dto.getEmail());
+        if (email.length() == 0) {
+            // 邮箱是核对身份的, 绑定丢了就从请求里兜底拿
+            email = trim(request.getParameter("email"));
+        }
         if (token.length() == 0) {
             return globalError(request, "链接无效");
         }
@@ -121,12 +136,11 @@ public class SurveyAnswerAction extends Action {
                 return globalError(request, "邮件地址与本次邀请不匹配");
             }
 
+            // 库里有这道题才算数 (防乱编 id)
             SurveyQuestionMapper questionMapper = session.getMapper(SurveyQuestionMapper.class);
-            List<Question> questions = questionMapper.selectBySurveyId(invite.getSurveyId());
+            List<Question> dbQuestions = questionMapper.selectBySurveyId(invite.getSurveyId());
             Map<Long, Question> questionMap = new HashMap<Long, Question>();
-            for (Question q : questions) {
-                // 选项列表也要加载, 否则选项内容快照会存成空串
-                q.setAnswers(questionMapper.selectOptionsByQuestionId(q.getId()));
+            for (Question q : dbQuestions) {
                 questionMap.put(Long.valueOf(q.getId()), q);
             }
 
@@ -138,52 +152,47 @@ public class SurveyAnswerAction extends Action {
             feedback.setEmail(email);
             feedbackMapper.insertFeedback(feedback);
 
-            Map<String, String[]> params = request.getParameterMap();
-            Iterator<String> keys = params.keySet().iterator();
-            while (keys.hasNext()) {
-                String key = keys.next();
-                if (!key.startsWith("q_")) {
-                    continue;
+            // 逐题往下取, 取到头为止 (和配置保存一个路数)
+            for (int i = 0; ; i++) {
+                Question q;
+                try {
+                    q = dto.getQuestions(i);
+                } catch (IndexOutOfBoundsException e) {
+                    break;
                 }
-                long questionId = parseLong(key.substring(2), 0);
-                Question question = questionMap.get(Long.valueOf(questionId));
-                if (question == null) {
-                    continue;
-                }
-                String[] values = params.get(key);
-                String value = values == null || values.length == 0 ? "" : values[0].trim();
-                if (value.length() == 0) {
+                if (q == null || q.getId() <= 0 || !questionMap.containsKey(Long.valueOf(q.getId()))) {
                     continue;
                 }
 
                 // 反馈题目行: 题干快照冗余, 以后展示不用回联 survey_question
                 SurveyFeedbackQuestion fq = new SurveyFeedbackQuestion();
                 fq.setFeedbackId(feedback.getId());
-                fq.setQuestionId(questionId);
-                fq.setQuestionContent(question.getText());
-                if (question.getType() == 1) {
-                    // 选择式: 值是选项ID (以后多选就是多个选项行)
-                    long optionId = parseLong(value, 0);
-                    if (optionId <= 0) {
-                        continue;
-                    }
-                    String optionContent = null;
-                    for (Answer option : question.getAnswers()) {
-                        if (option.getId() == optionId) {
-                            optionContent = option.getContent();
-                            break;
+                fq.setQuestionId(q.getId());
+                fq.setQuestionContent(q.getText());
+                if (q.getType() == 1) {
+                    // 选择式: 勾中的选项 (id>0) 才算; 以后多选就是多行选项
+                    List<Answer> chosenList = new ArrayList<Answer>();
+                    for (Answer a : q.getAnswers()) {
+                        if (a != null && a.getId() > 0) {
+                            chosenList.add(a);
                         }
                     }
+                    if (chosenList.isEmpty()) {
+                        continue;
+                    }
                     feedbackMapper.insertFeedbackQuestion(fq);
-
-                    SurveyFeedbackOption fo = new SurveyFeedbackOption();
-                    fo.setFeedbackQuestionId(fq.getId());
-                    fo.setOptionId(optionId);
-                    fo.setOptionContent(optionContent == null ? "" : optionContent);
-                    feedbackMapper.insertFeedbackOption(fo);
+                    for (Answer a : chosenList) {
+                        SurveyFeedbackOption fo = new SurveyFeedbackOption();
+                        fo.setFeedbackQuestionId(fq.getId());
+                        fo.setOptionId(a.getId());
+                        fo.setOptionContent(a.getContent() == null ? "" : a.getContent());
+                        feedbackMapper.insertFeedbackOption(fo);
+                    }
                 } else {
                     // 开放式: 作答文本直接快照在题目行上
-                    fq.setAnswerContent(value);
+                    if (q.getAnswers().size() > 0 && q.getAnswers().get(0) != null) {
+                        fq.setAnswerContent(q.getAnswers().get(0).getContent());
+                    }
                     feedbackMapper.insertFeedbackQuestion(fq);
                 }
             }
@@ -195,6 +204,21 @@ public class SurveyAnswerAction extends Action {
             session.close();
         }
         return new ActionForward("/survey_done.jsp");
+    }
+
+    /** 参数表扁平化: 嵌套 key 原样保留, populate 自己解析路径 */
+    private Map<String, Object> toParamMap(HttpServletRequest request) {
+        Map<String, String[]> raw = request.getParameterMap();
+        Map<String, Object> params = new HashMap<String, Object>();
+        for (Map.Entry<String, String[]> entry : raw.entrySet()) {
+            String[] values = entry.getValue();
+            if (values.length == 1) {
+                params.put(entry.getKey(), values[0]);
+            } else {
+                params.put(entry.getKey(), values);
+            }
+        }
+        return params;
     }
 
     /** 表单内容整单落日志 (一参数一行) */
