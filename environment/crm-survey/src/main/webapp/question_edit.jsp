@@ -17,6 +17,18 @@
             var choice = document.getElementById("typeChoice").checked;
             document.getElementById("optionArea").style.display = choice ? "" : "none";
         }
+        // 动态追加一个选项输入框
+        function addOption() {
+            var area = document.getElementById("optionArea");
+            var row = document.createElement("div");
+            row.className = "optionRow";
+            var input = document.createElement("input");
+            input.type = "text";
+            input.name = "optionContent";
+            input.size = 30;
+            row.appendChild(input);
+            area.insertBefore(row, document.getElementById("addOptionRow"));
+        }
         window.onload = toggleOptions;
     </script>
 </head>
@@ -44,18 +56,15 @@
             <td><textarea name="content" rows="3" cols="60">${question.text}</textarea></td>
         </tr>
         <tr>
-            <td>排序号:</td>
-            <td><input type="text" name="sortNo" value="${empty question ? 0 : question.sort}" size="6"/></td>
-        </tr>
-        <tr>
             <td>选项:</td>
             <td>
                 <div id="optionArea">
                     <c:forEach var="opt" items="${options}">
-                        <div><input type="text" name="optionContent" value="${opt.content}" size="30"/></div>
+                        <div class="optionRow"><input type="text" name="optionContent" value="${opt.content}" size="30"/></div>
                     </c:forEach>
-                    <div><input type="text" name="optionContent" size="30"/></div>
-                    <div><input type="text" name="optionContent" size="30"/></div>
+                    <div class="optionRow"><input type="text" name="optionContent" size="30"/></div>
+                    <div class="optionRow"><input type="text" name="optionContent" size="30"/></div>
+                    <div id="addOptionRow"><a href="javascript:void(0)" onclick="addOption()">+ 新增选项</a></div>
                     <div>(开放式题目不用填选项)</div>
                 </div>
             </td>

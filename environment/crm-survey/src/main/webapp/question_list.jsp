@@ -28,7 +28,6 @@
         <td>ID</td>
         <td>题型</td>
         <td>题干</td>
-        <td>排序号</td>
         <td>操作</td>
     </tr>
     <c:forEach var="q" items="${questions}">
@@ -41,7 +40,6 @@
             </c:choose>
         </td>
         <td>${q.text}</td>
-        <td>${q.sort}</td>
         <td>
             <a href="${pageContext.request.contextPath}/question.do?method=edit&id=${q.id}">编辑</a>
             <form action="${pageContext.request.contextPath}/question.do?method=delete" method="post">

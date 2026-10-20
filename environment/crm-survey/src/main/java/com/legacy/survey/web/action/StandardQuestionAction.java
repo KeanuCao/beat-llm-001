@@ -73,7 +73,8 @@ public class StandardQuestionAction extends DispatchAction {
         long id = parseLong(request.getParameter("id"), 0);
         int type = parseInt(request.getParameter("questionType"), TYPE_CHOICE);
         String content = trim(request.getParameter("content"));
-        int sort = parseInt(request.getParameter("sortNo"), 0);
+        String sortParam = request.getParameter("sortNo");
+        int sort = parseInt(sortParam, 0);
         String[] optionContents = request.getParameterValues("optionContent");
 
         if (content.length() == 0) {
@@ -92,14 +93,21 @@ public class StandardQuestionAction extends DispatchAction {
             Question question = new Question();
             question.setType(type);
             question.setText(content);
-            question.setSort(sort);
 
             if (id > 0) {
                 question.setId(id);
+                // 页面已不再提供排序号, 未传时沿用原值
+                if (sortParam == null) {
+                    Question existing = mapper.selectById(id);
+                    question.setSort(existing == null ? 0 : existing.getSort());
+                } else {
+                    question.setSort(sort);
+                }
                 mapper.update(question);
                 // 选项改法: 先物理删干净再插 (老代码一贯做法)
                 mapper.deleteOptionsByQuestionId(id);
             } else {
+                question.setSort(sort);
                 mapper.insert(question);
             }
 

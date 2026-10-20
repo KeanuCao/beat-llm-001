@@ -30,7 +30,7 @@
             (#{type}, #{text}, 0, #{sort}, 0, NOW(), NOW())
     </insert>
 
-    <insert id="insertOption" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertOption">
         INSERT INTO standard_question_option
             (standard_question_id, option_content, sort_no, create_time)
         VALUES
