@@ -8,6 +8,12 @@
 - 后台: `/crm-survey/login.jsp` (账号见 init-admin.sql)
 - 受访者: 邮件里的邀请链接 `/crm-survey/surveyAnswer.do?t=<uuid>`
 
+## 邮件配置
+
+真值不入库: 复制 `src/main/resources/mail.properties.template` 为同目录的
+`mail.properties` 并填写 SMTP 账号; 没有这个文件时应用走默认配置,
+发信会失败, 但邀请记录照常生成, 作答链路不受影响。
+
 ## 日志位置
 
 应用日志跟随 WEB 容器:

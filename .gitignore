@@ -6,5 +6,8 @@ deploy/
 logs/
 *.log
 
+# 邮件真值配置 (入库的是 mail.properties.template)
+environment/crm-survey/src/main/resources/mail.properties
+
 # IDE / 编辑器临时文件
 *.tmp.*
