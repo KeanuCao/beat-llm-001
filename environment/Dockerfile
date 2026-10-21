@@ -15,11 +15,12 @@ RUN sed -i 's|archive.ubuntu.com|mirrors.aliyun.com|g; s|security.ubuntu.com|mir
 # 构建期别让 apt 尝试起服务 (容器里没有 systemd)
 RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && chmod +x /usr/sbin/policy-rc.d
 
-# JDK 1.8 (运维上周刚升级的版本) + mariadb (本机库/查库验收) + curl (联调用)
+# JDK 1.8 headless (运维上周刚升级的版本; Web 应用不需要图形栈) + mariadb (本机库/查库验收)
+# + curl (联调用; ubuntu 镜像不带, 必须显式装)
 # 注意: 不用 apt 的 maven —— 它强依赖 default-jre-headless (= openjdk-11 的 42MB, 纯浪费)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       openjdk-8-jdk mariadb-server mariadb-client curl \
+       openjdk-8-jdk-headless mariadb-server mariadb-client curl \
     && rm -rf /var/lib/apt/lists/*
 ENV JAVA_HOME_8=/usr/lib/jvm/java-8-openjdk-amd64
 ENV JDK_VERSION=8
