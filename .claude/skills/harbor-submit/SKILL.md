@@ -32,9 +32,13 @@ schema_version = "1.3"
 verifier 1200s / agent 2400s 翻倍给了余量 —— 平台机器比本地慢，超时宁大勿小）。
 
 **编排形态：单 Dockerfile，无 compose**（第 1/3 轮各栽一次 compose 禁键后彻底弃用）。
-environment/ 只有 `Dockerfile` + `docker-entrypoint.sh` + `crm-survey/`；数据库
-（mariadb-server）与应用同容器，`jdbc.properties` 连 `localhost:3306`；容器保活在
-Dockerfile 的 CMD（见第 2 节）。本地测试/调试命令见 crm-deploy skill。
+environment/ 只有 `Dockerfile` + `crm-survey/`；base = **ubuntu 22.04**（centos7 的
+vault 归档源吞吐实测 ~160KB/s 不可救，换活跃 apt 源；且 mariadb 10.6 与沙箱同构、
+5.5 语法坑消失——`CREATE USER IF NOT EXISTS` 是 10.1.3 才有的，5.5 炸过一次）。
+镜像=静态包（构建期 db 初始化+war 部署），ubuntu 镜像**不带 curl 必须显式 apt 装**
+（agent 联调要用）；mariadb 配置 include 目录在 /etc/mysql/conf.d（debian 系）。
+`jdbc.properties` 连 `localhost:3306`；容器保活在 CMD（见第 2 节）。本地测试/调试
+命令见 crm-deploy skill。
 task.toml 的坑史：早期 `schema_version` 缺失/低于 1.3 被打回，`[metadata]` 还残留过
 物理题元数据（category=physics）。
 

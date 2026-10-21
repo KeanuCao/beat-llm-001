@@ -5,8 +5,9 @@ description: CRM 问卷系统的编译/部署/本地测试速查（单容器一�
 
 # CRM 问卷系统部署速查
 
-布局：**单容器**（`environment/Dockerfile` 一体机）= CentOS 7 + JDK 1.8 + Maven 3.3.9 +
-Tomcat 8.5.9 + mariadb-server（本机库，首启自动初始化建库导种子）+ 源码 `/opt/crm-survey`。
+布局：**单容器**（`environment/Dockerfile` 一体机）= Ubuntu 22.04 + JDK 1.8 (openjdk-8-jdk,
+apt) + Maven (apt) + Tomcat 8.5.9 (tarball) + mariadb-server 10.6（本机库，构建期已初始化
+建库导种子）+ 源码 `/opt/crm-survey`。**与沙箱同构**（同样的 ubuntu/apt/mariadb 10.6 组合）。
 应用配置 `jdbc.properties` 连 `localhost:3306`。compose 已弃用删除（平台键白名单坑多，
 详见 harbor-submit skill 第 1 节）。
 
@@ -58,8 +59,8 @@ docker exec crm-main mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -e "SELECT COUN
 
 ## 排障
 
-- 日志：容器内 `$CATALINA_HOME/logs/catalina.out`，或 `docker logs crm-main`（entrypoint 阶段输出）
-- mysqld 起不来：进容器看 `/var/log/mariadb/mariadb.log` 与 `ls -la /var/lib/mysql`
-- 库账号 crm/crm123，root 走本地 socket 无密（`docker exec crm-main mysql -uroot crm_survey`）
+- 日志：容器内 `$CATALINA_HOME/logs/catalina.out`，或 `docker logs crm-main`
+- mysqld 起不来：进容器看 `/var/log/mysql/error.log` 与 `ls -la /var/lib/mysql`
+- 库账号 crm/crm123，root 走本地 socket unix_socket 认证（`docker exec crm-main mysql -uroot crm_survey`）
 - 邮件配置：`src/main/resources/mail.properties` 不入库，从 template 复制填真值；没有它发信失败但邀请照常生成
-- 镜像构建的下载大头只剩 maven/tomcat tarball（各 ~9MB）与 yum（vault/aliyun）；沙箱验证等价环境见 harbor-submit skill 第 5 节
+- 基础镜像换了 ubuntu 后冷构建快很多（apt aliyun 活跃源 vs centos vault 归档源 ~160KB/s 的教训）

@@ -9,7 +9,7 @@
 # ============================================================
 set -e
 
-export JAVA_HOME=${JAVA_HOME_8:-/usr/lib/jvm/java-1.8.0-openjdk}
+export JAVA_HOME=${JAVA_HOME_8:-/usr/lib/jvm/java-8-openjdk-amd64}
 export PATH="$JAVA_HOME/bin:$PATH"
 
 # 1) 打包当前源码
@@ -32,7 +32,7 @@ for i in $(seq 1 90); do
     if mysqladmin --silent ping >/dev/null 2>&1; then DB_OK=1; break; fi
     sleep 2
 done
-[ -n "$DB_OK" ] || { echo ">>> 数据库起不来, 看 /var/log/mariadb/mariadb.log"; exit 1; }
+[ -n "$DB_OK" ] || { echo ">>> 数据库起不来, 看 /var/log/mysql/error.log"; exit 1; }
 mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -N -s -e "SELECT 1;" >/dev/null 2>&1 \
     || { echo ">>> crm 账号连不上 (数据目录异常?), 考虑重建容器"; exit 1; }
 
