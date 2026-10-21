@@ -22,7 +22,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: crm-main
     depends_on:
       - db
     environment:

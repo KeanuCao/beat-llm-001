@@ -12,6 +12,9 @@
 - 后台入口：http://localhost:8080/crm-survey/login.jsp（超级管理员账号见 init-admin.sql）；问卷配置的提交端点为 POST http://localhost:8080/crm-survey/surveyConfig.do
 - 受访者作答入口：邮件链接打开 http://localhost:8080/crm-survey/surveyAnswer.do?t=<邀请码>（邀请码在 survey_invite 表），作答提交同样是 POST 到这个端点
 - 站点启用了 CSRF 防护，不带合法 token 的 POST 请求会被直接拒绝（403）
+- 受访者提交表单是嵌套结构：`t`（邀请码）、`email`、`questions[i].id` / `questions[i].type` / `questions[i].text`、`questions[i].answers[j].id`（选中项）/ `questions[i].answers[j].content`
+- 已答过的邀请码再打开会看到“您已经回答问卷，感谢您的参与！”，无效邀请码打开看到“链接无效”——这些既有页面行为保持不变
+- 应用机上周起运行在 JDK 1.8 上，评测验收也在 JDK 1.8 的环境下进行
 - 为了保证问题在一个干净的环境被复现，我们需要自己思考问题是怎么从E2E发生的
 
 ## 期望结果
