@@ -54,6 +54,10 @@ mask_of() {
     printf '%s' "$M"
 }
 
+# ---------- 0. 环境版本 (作者侧每次改码更新 version 文件, 黑盒定位用) ----------
+VERSION_FILE="${VERSION_FILE:-$APP_HOME/version}"
+[ -f "$VERSION_FILE" ] && echo "[verifier] environment version: $(cat "$VERSION_FILE")"
+
 # ---------- 1. 部署: 运维标准脚本一键拉起/重新部署 (幂等) ----------
 # deploy.sh = 编译当前源码 -> 换包重启应用 -> 确保 mysqld 在跑 -> 等就绪
 # (验收对象永远是 src 的产物, 脱钩路径天然被堵; 服务不随容器自启, 谁验谁拉)

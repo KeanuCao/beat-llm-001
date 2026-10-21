@@ -8,6 +8,10 @@ description: 题包推送平台送审前的自检清单 —— task.toml 格式�
 三轮送审三轮翻车的坑全沉淀在这里。**任何涉及 environment/、tests/、
 instruction.md、solution/ 的改动，push 前把五节全部过一遍。**
 
+**version 纪律**：每次改代码（尤其 environment/）必须更新
+`environment/crm-survey/version`（内容 = `date +%Y%m%d%H%M%S` 输出，14 位）并随
+提交一并 push —— test.sh 开头会打出它，黑盒 trial 靠这个定位"跑的是哪个版本"。
+
 ## 1. 结构门禁：task.toml 格式 + compose 键白名单（launch 硬门禁，一键违规整个评测起不来）
 
 **task.toml 格式校验**（第一道门）：`schema_version` 必须 ≥ **"1.3"**（平台校验要求，
