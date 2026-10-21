@@ -76,7 +76,11 @@ esac
 # ---------- 1.3 强制以源码重建部署: 验收对象永远是 src 编译出来的产物 ----------
 # (堵"改 war 不改源码"的脱钩路径; 交付不可构建也在此拦下)
 echo "[verifier] rebuilding from $APP_HOME ..."
-( cd "$APP_HOME" && mvn -B -q -o -DskipTests clean package ) || { echo "[verifier] build from src failed"; fail; }
+if ! ( cd "$APP_HOME" && mvn -B -q -o -DskipTests clean package > /tmp/verifier-build.log 2>&1 ); then
+    echo "[verifier] build from src failed, log tail:"
+    tail -30 /tmp/verifier-build.log
+    fail
+fi
 $CATALINA_HOME/bin/catalina.sh stop >/dev/null 2>&1 || true
 sleep 3
 rm -rf "$CATALINA_HOME/webapps/crm-survey"

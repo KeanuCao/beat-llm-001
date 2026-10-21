@@ -17,9 +17,9 @@ echo ">>> 使用 JDK $JDK_VERSION: $JAVA_HOME"
 
 DB_HOST=${DB_HOST:-db}
 DB_PORT=${DB_PORT:-3306}
-echo ">>> 等待数据库 $DB_HOST:$DB_PORT (最多 120s) ..."
+echo ">>> 等待数据库 $DB_HOST:$DB_PORT (最多 300s, mysql 5.7 首次初始化不快) ..."
 DB_OK=""
-for i in $(seq 1 60); do
+for i in $(seq 1 150); do
     if (echo > /dev/tcp/$DB_HOST/$DB_PORT) 2>/dev/null; then DB_OK=1; break; fi
     sleep 2
 done
