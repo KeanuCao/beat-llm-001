@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 2016-11-14 新加的, 快照三兄弟, 插入为主 -->
+<mapper namespace="com.legacy.survey.dao.SurveyFeedbackMapper">
+
+    <insert id="insertFeedback" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_feedback
+              (invite_uuid, survey_id, email, create_time)
+        VALUES (#{inviteUuid}, #{surveyId}, #{email}, NOW())
+    </insert>
+
+    <insert id="insertFeedbackQuestion" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_feedback_question
+              (feedback_id, question_id, question_type, question_content, answer_content, create_time)
+        VALUES (#{feedbackId}, #{questionId}, #{questionType}, #{questionContent}, #{answerContent}, NOW())
+    </insert>
+
+    <insert id="insertFeedbackOption" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_feedback_option
+              (feedback_question_id, option_id, option_content, create_time)
+        VALUES (#{feedbackQuestionId}, #{optionId}, #{optionContent}, NOW())
+    </insert>
+
+    <!-- 谁答过这份问卷 -->
+    <select id="selectBySurveyId" resultType="com.legacy.survey.pojo.SurveyFeedback">
+        SELECT id, invite_uuid AS inviteUuid, survey_id AS surveyId, email, create_time AS createTime
+          FROM survey_feedback
+         WHERE survey_id = #{surveyId}
+         ORDER BY id
+    </select>
+
+    <!-- 题干快照直接用, 不回联 survey_question -->
+    <select id="selectQuestionsByFeedbackId" resultType="com.legacy.survey.pojo.SurveyFeedbackQuestion">
+        SELECT id, feedback_id AS feedbackId, question_id AS questionId, question_type AS questionType,
+               question_content AS questionContent, answer_content AS answerContent, create_time AS createTime
+          FROM survey_feedback_question
+         WHERE feedback_id = #{feedbackId}
+         ORDER BY id
+    </select>
+
+    <!-- 多选的话这里就是好几行 -->
+    <select id="selectOptionsByFeedbackQuestionId" resultType="com.legacy.survey.pojo.SurveyFeedbackOption">
+        SELECT id, feedback_question_id AS feedbackQuestionId, option_id AS optionId,
+               option_content AS optionContent, create_time AS createTime
+          FROM survey_feedback_option
+         WHERE feedback_question_id = #{feedbackQuestionId}
+         ORDER BY id
+    </select>
+
+    <!-- 一个人只留一份反馈: 重交时先按邀请码清旧的 (从子到父) -->
+    <delete id="deleteOptionsByInviteUuid">
+        DELETE FROM survey_feedback_option WHERE feedback_question_id IN (
+            SELECT id FROM survey_feedback_question WHERE feedback_id IN (
+                SELECT id FROM survey_feedback WHERE invite_uuid = #{inviteUuid}))
+    </delete>
+
+    <delete id="deleteQuestionsByInviteUuid">
+        DELETE FROM survey_feedback_question WHERE feedback_id IN (
+            SELECT id FROM survey_feedback WHERE invite_uuid = #{inviteUuid})
+    </delete>
+
+    <delete id="deleteFeedbackByInviteUuid">
+        DELETE FROM survey_feedback WHERE invite_uuid = #{inviteUuid}
+    </delete>
+
+</mapper>

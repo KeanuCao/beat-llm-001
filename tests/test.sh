@@ -53,6 +53,34 @@ mask_of() {
 CODE=$(http -o /dev/null -w "%{http_code}" "$APP_URL/login.jsp")
 [ "$CODE" = "200" ] || { echo "[verifier] env down: login.jsp=$CODE"; fail; }
 
+# ---------- 1.5 改动预算 (修复最小化: 总 diff 行数 <= 预算) ----------
+# 基线快照 = tests/baseline/src (交付时的原始源码); 一行修复 = 2删+2增 = 4
+BASE_DIR="$REPO_DIR/tests/baseline/src"
+SRC_DIR="$REPO_DIR/environment/crm-survey/src"
+LINE_BUDGET="${LINE_BUDGET:-4}"
+if [ -d "$BASE_DIR" ]; then
+    TOTAL=0
+    for f in $(cd "$BASE_DIR" && find . -type f | sed 's|^\./||'); do
+        case "$f" in */mail.properties) continue;; esac
+        A="$SRC_DIR/$f"; B="$BASE_DIR/$f"
+        if [ ! -f "$A" ]; then
+            D=$(wc -l < "$B")
+        elif [ ! -f "$B" ]; then
+            D=$(wc -l < "$A")
+        else
+            D=$(diff --strip-trailing-cr "$B" "$A" | grep -cE '^[<>]')
+        fi
+        TOTAL=$((TOTAL+D))
+    done
+    # agent 新增的文件也计入
+    for f in $(cd "$SRC_DIR" && find . -type f | sed 's|^\./||'); do
+        case "$f" in */mail.properties) continue;; esac
+        [ -f "$BASE_DIR/$f" ] || TOTAL=$((TOTAL+$(wc -l < "$SRC_DIR/$f")))
+    done
+    [ "$TOTAL" -le "$LINE_BUDGET" ] || { echo "[verifier] line budget exceeded: $TOTAL > $LINE_BUDGET (fix must be minimal)"; fail; }
+    echo "[verifier] diff lines vs baseline: $TOTAL (budget $LINE_BUDGET)"
+fi
+
 # ---------- 2. 造具 (裁判侧, 直插; 全部带时间戳防撞) ----------
 STAMP=$(date +%s)
 SID=$(db "INSERT INTO survey (title, description, status, creator_id, publish_time, is_deleted, create_time, update_time)
