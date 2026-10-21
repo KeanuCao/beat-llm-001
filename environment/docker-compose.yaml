@@ -1,10 +1,7 @@
-# CRM 问卷系统 - 编排文件
-# 老架构, 三台"机器"各干各的:
-#   builder - 编译 (不在这里跑服务, 用 crm-survey/build.sh 单独拉起来编译)
-#   app     - Tomcat 跑应用, 前面当年还有层 Apache httpd, 这里省了
-#   db      - MySQL 5.7 存数据
-#
-# 本文件放在 environment/ 根下, 相对路径都以此为基准
+# CRM 问卷系统 - 编排
+# main = 开发测试一体机 (agent 工作区 + 应用本体, Tomcat 就跑在这台)
+# db   = 数据库机器 (MySQL 5.7, 侧车)
+# 应用机和数据库机分离, 是当年机房里的铁律
 
 services:
   db:
@@ -18,27 +15,21 @@ services:
       MYSQL_USER: "crm"
       MYSQL_PASSWORD: "crm123"
       TZ: "Asia/Shanghai"
-    # 注意: 不挂数据卷, 容器重建即数据重置 —— 测试环境, 故意的
-    # 暴露给测试环境直连验数 (账号 crm/crm123, root 密码 root123)
-    # 宿主机侧用 8306, 防止和测试机上已有的 MySQL 撞端口; 容器内还是 3306
+    # 暴露给宿主机方便人工核数 (8306 防撞端口); 编排网络内照旧 3306
     ports:
       - "8306:3306"
 
-  app:
+  main:
     build:
-      context: ./crm-survey
-      dockerfile: app/Dockerfile
-    container_name: crm-tomcat
+      context: .
+      dockerfile: Dockerfile
+    container_name: crm-main
     depends_on:
       - db
     environment:
       DB_HOST: "db"
       DB_PORT: "3306"
+      JDK_VERSION: "8"
       TZ: "Asia/Shanghai"
-      # 7=JDK 1.7.0_80, 8=JDK 1.8 (默认); 切换只重建容器, 不重建镜像
-      JDK_VERSION: "${JDK_VERSION:-8}"
     ports:
       - "8080:8080"
-    volumes:
-      # war 包从构建机"发"过来: 放进 crm-survey/deploy 就等于当年往 webapps 里扔包
-      - ./crm-survey/deploy:/usr/local/tomcat/webapps

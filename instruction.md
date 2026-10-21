@@ -6,9 +6,9 @@
 上周运维团队在半夜对服务器做例行维护和系统组件升级。几天后，客服部门陆续接到客户投诉：客户在后台把 Survey（问卷）配置好发布给受访者之后，收到的问卷回答非常诡异——同一个 Survey，有的受访者提交的问卷回答完完整整，有的受访者却只有问题没有答案。
 
 ## 当前状态
-- 完整 Java Web 源码在 `environment/crm-survey/`（Maven war 工程）
-- 运行环境由 `environment/docker-compose.yaml` 编排：app（Tomcat）+ db（MySQL 5.7）两个容器，数据库已按 `crm-survey/schema.sql` 自动初始化
-- 构建与部署：在 `environment/crm-survey/` 下执行 `./build.sh` 编译，war 会放到 `crm-survey/deploy/` 并被 Tomcat 自动部署；修改代码后重跑 `./build.sh` 并重启 app 容器即可生效
+- 你现在这台机器是开发测试一体机，也是应用服务器：完整 Java Web 源码在 `/opt/crm-survey`（Maven war 工程），你的工作目录就是它
+- 数据库在另一台"机器"上（编排里的 db 容器）：db:3306，库 crm_survey，业务账号 crm/crm123，本机已装 mysql 客户端可直连查询
+- 构建与部署（一体机老流程）：cd /opt/crm-survey && mvn -DskipTests package，把 target/crm-survey.war 放进 Tomcat 的 webapps 再重启（catalina.sh stop / start）
 - 后台入口：http://localhost:8080/crm-survey/login.jsp（超级管理员账号见 init-admin.sql）；问卷配置的提交端点为 POST http://localhost:8080/crm-survey/surveyConfig.do
 - 站点启用了 CSRF 防护，不带合法 token 的 POST 请求会被直接拒绝（403）
 - 为了保证问题在一个干净的环境被复现，我们需要自己思考问题是怎么从E2E发生的
@@ -19,7 +19,7 @@
 3. 找到 root cause，按公司流程提交 bug 单：在仓库根目录 `bugs/` 下创建 `BUG-<日期>-<序号>.md`，内容包含【标题 / 复现步骤 / 根本原因 / 影响范围 / 修复方案】五个小节
 
 ## 约束
-- app 容器可以重启，但不允许进入 app 容器执行任何操作，请通过 HTTP 请求或浏览器来验证
+- 这台应用机器随你操作；数据库那边只许用 mysql 客户端查询验证，禁止任何写库/改库补数据的行为，也不要绕过应用直接写数
 - 不要硬编码结果
 - 修复要克制：尽可能少改代码，公司对紧急补丁的代码修改行数有一定的限制（评测按交付时的基线快照比对改动行数，超限直接不合格；.properties 配置文件不算代码，不计入）
-- 修复必须基于根因定位，落在 `environment/crm-survey/` 工程的应用代码里：禁止直接改数据库补数据、禁止绕过应用写数、禁止用修改运行环境的方式回避问题；依赖版本调整（pom.xml）属于应用侧修复，允许
+- 修复必须基于根因定位，落在 `/opt/crm-survey` 工程的应用代码里；依赖版本调整（pom.xml）属于应用侧修复，允许

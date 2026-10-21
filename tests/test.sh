@@ -20,8 +20,10 @@ set -u
 
 REWARD_FILE="${REWARD_FILE:-/logs/verifier/reward.txt}"
 APP_URL="${APP_URL:-http://localhost:8080/crm-survey}"
-DB_HOST="${DB_HOST:-127.0.0.1}"; DB_PORT="${DB_PORT:-8306}"
+DB_HOST="${DB_HOST:-db}"; DB_PORT="${DB_PORT:-3306}"
 DB_USER="${DB_USER:-crm}"; DB_PASS="${DB_PASS:-crm123}"; DB_NAME="${DB_NAME:-crm_survey}"
+SRC_DIR="${SRC_DIR:-/opt/crm-survey/src}"
+BUGS_DIR="${BUGS_DIR:-/opt/crm-survey/bugs}"
 REPO_DIR="${REPO_DIR:-$PWD}"
 
 mkdir -p "$(dirname "$REWARD_FILE")" 2>/dev/null
@@ -39,7 +41,7 @@ mask_of() {
     M=$(printf '%s' "$EMAIL" | openssl enc -des-ecb -K "$KEY_HEX" -nosalt 2>/dev/null | od -An -tx1 | tr -d ' \n')
     [ -z "$M" ] && M=$(printf '%s' "$EMAIL" | openssl enc -des-ecb -K "$KEY_HEX" -nosalt -provider legacy -provider default 2>/dev/null | od -An -tx1 | tr -d ' \n')
     if [ -z "$M" ]; then
-        for CL in "$REPO_DIR/environment/crm-survey/target/classes" "$REPO_DIR/environment/crm-survey/target/crm-survey/WEB-INF/classes"; do
+        for CL in "$SRC_DIR/../target/classes" "$SRC_DIR/../target/crm-survey/WEB-INF/classes"; do
             if [ -f "$CL/com/legacy/survey/util/MaskUtil.class" ]; then
                 M=$(java -cp "$CL" com.legacy.survey.util.MaskUtil "$EMAIL" 2>/dev/null)
                 [ -n "$M" ] && break
@@ -55,8 +57,7 @@ CODE=$(http -o /dev/null -w "%{http_code}" "$APP_URL/login.jsp")
 
 # ---------- 1.5 改动预算 (修复最小化: 总 diff 行数 <= 预算) ----------
 # 基线快照 = tests/baseline/src (交付时的原始源码); 一行修复 = 2删+2增 = 4
-BASE_DIR="$REPO_DIR/tests/baseline/src"
-SRC_DIR="$REPO_DIR/environment/crm-survey/src"
+BASE_DIR="${BASE_DIR:-$(cd "$(dirname "$0")" && pwd)/baseline/src}"
 LINE_BUDGET="${LINE_BUDGET:-4}"
 if [ -d "$BASE_DIR" ]; then
     TOTAL=0
@@ -159,7 +160,7 @@ FO=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id 
 [ "$FO" = "20" ] || { echo "[verifier] feedback_option rows=$FO want 20"; fail; }
 
 # ---------- 5. bug 单 (期望结果 3, 五节齐全) ----------
-BUGFILE=$(ls "$REPO_DIR"/bugs/BUG-*.md 2>/dev/null | head -1)
+BUGFILE=$(ls "$BUGS_DIR"/BUG-*.md 2>/dev/null | head -1)
 [ -n "$BUGFILE" ] || { echo "[verifier] no bug report"; fail; }
 [ "$(wc -c < "$BUGFILE")" -gt 100 ] || { echo "[verifier] bug report too thin"; fail; }
 for S in 标题 复现步骤 根本原因 影响范围 修复方案; do
