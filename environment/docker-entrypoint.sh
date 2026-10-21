@@ -23,8 +23,10 @@ until (echo > /dev/tcp/$DB_HOST/$DB_PORT) 2>/dev/null; do
 done
 
 cd /opt/crm-survey
-echo ">>> 编译 war..."
-mvn -B -q -DskipTests clean package
+if [ ! -f target/crm-survey.war ]; then
+    echo ">>> 镜像里没带 war, 现场编译..."
+    mvn -B -q -DskipTests clean package
+fi
 
 mkdir -p deploy
 cp -f target/crm-survey.war $CATALINA_HOME/webapps/

@@ -51,8 +51,13 @@ mask_of() {
     printf '%s' "$M"
 }
 
-# ---------- 1. 环境健康 ----------
-CODE=$(http -o /dev/null -w "%{http_code}" "$APP_URL/login.jsp")
+# ---------- 1. 环境健康 (等应用就绪, 最多约两分钟) ----------
+CODE=""
+for i in $(seq 1 60); do
+    CODE=$(http -o /dev/null -w "%{http_code}" "$APP_URL/login.jsp")
+    [ "$CODE" = "200" ] && break
+    sleep 2
+done
 [ "$CODE" = "200" ] || { echo "[verifier] env down: login.jsp=$CODE"; fail; }
 
 # ---------- 1.5 改动预算 (修复最小化: 总 diff 行数 <= 预算) ----------

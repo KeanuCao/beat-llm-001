@@ -1,16 +1,29 @@
 #!/bin/bash
 # ============================================================
-# 参考解 (在一体机 main 里执行):
+# 参考解 (双模式: 容器里直接跑, 宿主机上也会自动进容器执行):
 #   1. oracle_convert.py 应用一行修复 (getAnswers 的数组元素类型
 #      与 indexed 属性类型对齐, 内省恢复, 嵌套绑定通)
-#   2. 本机重编译 war
+#   2. 重编译 war
 #   3. 换包 + 重启 Tomcat (一体机老流程, 全程不需要 docker)
+#
+# 根因: Question.getAnswers() 返回 BaseSurveyItem[](父类数组),
+# 与 indexed 属性的 Answer 类型不一致, java.beans 内省配对失败
+# (JDK 8 上 beanutils 会打 type mismatch 的 SEVERE), 嵌套绑定瘫痪;
+# SuperBeanConverter 把异常吞掉, 受访者回答静默丢失。
 # ============================================================
 set -e
+
+if [ ! -d /opt/crm-survey ]; then
+    # 宿主机模式: 把 solution 丢进 main 容器里重跑自己
+    echo ">>> 宿主机模式: 进入 crm-main 容器执行..."
+    docker cp "$(cd "$(dirname "$0")/.." && pwd)/solution" crm-main:/opt/solution
+    exec docker exec crm-main bash /opt/solution/solve.sh
+fi
+
 cd /opt/crm-survey
 
 echo ">>> 应用 oracle 转换..."
-python3 solution/oracle_convert.py 2>/dev/null || python3 $(dirname "$0")/oracle_convert.py
+python3 solution/oracle_convert.py 2>/dev/null || python3 /opt/solution/oracle_convert.py
 
 echo ">>> 重新编译 war..."
 mvn -B -q -DskipTests clean package

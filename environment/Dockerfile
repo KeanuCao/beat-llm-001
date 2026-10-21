@@ -75,6 +75,9 @@ RUN set -e; \
 COPY crm-survey /opt/crm-survey
 WORKDIR /opt/crm-survey
 
+# 构建期就把 war 打出来 (镜像一起来就能用, 别让评测等编译)
+RUN mvn -B -q -DskipTests clean package
+
 # 数据库在另一台"机器"上
 ENV DB_HOST=db
 ENV DB_PORT=3306
