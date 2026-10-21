@@ -99,7 +99,11 @@ done
 # 验证侧不持有与环境逐字节相同的资产。一行修复 = 2删+2增 = 4
 BASELINE_TAR="${BASELINE_TAR:-/opt/.baseline/src.tar.gz}"
 LINE_BUDGET="${LINE_BUDGET:-4}"
-if [ -f "$BASELINE_TAR" ]; then
+if [ ! -f "$BASELINE_TAR" ]; then
+    echo "[verifier] baseline snapshot missing: $BASELINE_TAR (预算检查是硬约束, 不允许静默跳过)"
+    fail
+fi
+{
     STAGE=$(mktemp -d)
     tar xzf "$BASELINE_TAR" -C "$STAGE"
     BASE_DIR="$STAGE/crm-survey/src"
@@ -124,7 +128,7 @@ if [ -f "$BASELINE_TAR" ]; then
     rm -rf "$STAGE"
     [ "$TOTAL" -le "$LINE_BUDGET" ] || { echo "[verifier] line budget exceeded: $TOTAL > $LINE_BUDGET (fix must be minimal)"; fail; }
     echo "[verifier] diff lines vs baseline: $TOTAL (budget $LINE_BUDGET)"
-fi
+}
 
 # ---------- 2. 造具 (裁判侧, 直插; 全部带时间戳防撞) ----------
 STAMP=$(date +%s)

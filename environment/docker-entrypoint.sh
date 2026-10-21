@@ -34,9 +34,9 @@ if [ ! -d /var/lib/mysql/crm_survey ]; then
     mysql -e "CREATE DATABASE IF NOT EXISTS crm_survey DEFAULT CHARACTER SET utf8; \
               CREATE USER IF NOT EXISTS 'crm'@'%' IDENTIFIED BY 'crm123'; \
               GRANT ALL PRIVILEGES ON crm_survey.* TO 'crm'@'%'; \
-              FLUSH PRIVILEGES;"
-    mysql < /opt/crm-survey/schema.sql
-    mysql < /opt/crm-survey/init-admin.sql
+              FLUSH PRIVILEGES;" || { echo ">>> 建库/建号失败"; exit 1; }
+    mysql < /opt/crm-survey/schema.sql || { echo ">>> schema 导入失败"; exit 1; }
+    mysql < /opt/crm-survey/init-admin.sql || { echo ">>> 管理员种子导入失败"; exit 1; }
     echo ">>> 种子导入完成"
 fi
 

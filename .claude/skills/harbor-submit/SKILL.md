@@ -98,3 +98,10 @@ BASELINE_TAR=/opt/.baseline/src.tar.gz bash tests/test.sh
 **还原纪律**：实验性修改 src 后必须 `git checkout -- <file>` 还原；war 必须与
 src 同态（验收的强制重建段会自动把 war 重建回 src 的状态，跑哪态就停哪态）；
 基线 tar（BASELINE_TAR）必须始终是未修复态。
+
+**沙箱盲区**（血的教训：重写 Dockerfile 时丢了基线 tar 段，沙箱全绿、真容器 0 分）：
+沙箱的等价环境是**手工预置**的 —— BASELINE_TAR 是手动打的 tar、数据库是 apt 独立
+装的 —— 所以 **Dockerfile / entrypoint 里对应段的缺失或失败，沙箱测不出来**。
+改动这两个文件后必须人工核对：基线 tar 段还在（`grep tar czf environment/Dockerfile`）、
+entrypoint 的 db 初始化每一步都有失败检查（不允许静默继续）、预算检查是 fail-closed
+（BASELINE_TAR 缺失 = fail，不是跳过）。
