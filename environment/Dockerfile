@@ -87,7 +87,7 @@ RUN set -e; \
     for i in $(seq 1 60); do mysqladmin --silent ping >/dev/null 2>&1 && break; sleep 2; done; \
     mysql -e "DELETE FROM mysql.user WHERE user=''; FLUSH PRIVILEGES;"; \
     mysql -e "CREATE DATABASE IF NOT EXISTS crm_survey DEFAULT CHARACTER SET utf8; \
-              CREATE USER IF NOT EXISTS 'crm'@'%' IDENTIFIED BY 'crm123'; \
+              CREATE USER 'crm'@'%' IDENTIFIED BY 'crm123'; \
               GRANT ALL PRIVILEGES ON crm_survey.* TO 'crm'@'%'; \
               FLUSH PRIVILEGES;"; \
     mysql < /opt/crm-survey/schema.sql; \
