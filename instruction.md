@@ -7,7 +7,7 @@
 
 ## 当前状态
 - 完整 Java Web 源码在 `environment/crm-survey/`（Maven war 工程）
-- 运行环境由 `environment/docker-compose.yml` 编排：app（Tomcat）+ db（MySQL 5.7）两个容器，数据库已按 `crm-survey/schema.sql` 自动初始化
+- 运行环境由 `environment/docker-compose.yaml` 编排：app（Tomcat）+ db（MySQL 5.7）两个容器，数据库已按 `crm-survey/schema.sql` 自动初始化
 - 构建与部署：在 `environment/crm-survey/` 下执行 `./build.sh` 编译，war 会放到 `crm-survey/deploy/` 并被 Tomcat 自动部署；修改代码后重跑 `./build.sh` 并重启 app 容器即可生效
 - 后台入口：http://localhost:8080/crm-survey/login.jsp（超级管理员账号见 init-admin.sql）；问卷配置的提交端点为 POST http://localhost:8080/crm-survey/surveyConfig.do
 - 站点启用了 CSRF 防护，不带合法 token 的 POST 请求会被直接拒绝（403）
