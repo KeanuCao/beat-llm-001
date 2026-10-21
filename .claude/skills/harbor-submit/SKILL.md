@@ -32,11 +32,14 @@ schema_version = "1.3"
 verifier 1200s / agent 2400s 翻倍给了余量 —— 平台机器比本地慢，超时宁大勿小）。
 
 **编排形态：单 Dockerfile，无 compose**（第 1/3 轮各栽一次 compose 禁键后彻底弃用）。
-environment/ 只有 `Dockerfile` + `crm-survey/`；base = **ubuntu 22.04**（centos7 的
-vault 归档源吞吐实测 ~160KB/s 不可救，换活跃 apt 源；且 mariadb 10.6 与沙箱同构、
-5.5 语法坑消失——`CREATE USER IF NOT EXISTS` 是 10.1.3 才有的，5.5 炸过一次）。
+environment/ 只有 `Dockerfile` + `crm-survey/`；base = **ubuntu 22.04 + 清华 apt 源**
+（实测三方对比：清华 update 4.4s / 原生 archive 7.9s / **aliyun ubuntu 镜像 101.8s**
+—— aliyun 的 ubuntu archive 对谁都慢，用户侧 install 层曾 488s，清华 15.9s；
+apt 的 maven 包会强拉 openjdk-11-jre-headless 42MB 浪费，maven 用 tarball 3.6.3）。
+MariaDB 10.6 与沙箱同构、5.5 语法坑消失（`CREATE USER IF NOT EXISTS` 是 10.1.3 才有）。
 镜像=静态包（构建期 db 初始化+war 部署），ubuntu 镜像**不带 curl 必须显式 apt 装**
 （agent 联调要用）；mariadb 配置 include 目录在 /etc/mysql/conf.d（debian 系）。
+**冷构建实测 59.8s**（--no-cache 全冷，对比 centos 时代 9m21s = 9.4 倍）。
 `jdbc.properties` 连 `localhost:3306`；容器保活在 CMD（见第 2 节）。本地测试/调试
 命令见 crm-deploy skill。
 task.toml 的坑史：早期 `schema_version` 缺失/低于 1.3 被打回，`[metadata]` 还残留过
