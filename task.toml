@@ -1,23 +1,23 @@
-[task]
 schema_version = "1.3"
-name = "KeanuCao/exam_001"
+
+[task]
+name = "caotan/coding-exam_001"
 authors = [{ name = "曹檀", email = "cao_email_t@126.com" }]
-
-[agent]
-timeout_sec = 1200         # E2E 链路（登录/CSRF/发布/邀请/定时任务）+ 修复迭代 + bug 单，难题档位
-
-[environment]
-build_timeout_sec = 600.0  # 三镜像构建（centos7 vault 源 + jdk7 tarball + mysql5.7），首次较慢
-cpus = 1
-memory_mb = 4096
-storage_mb = 10240         # 多镜像 + maven 仓库缓存
-gpus = 0
-allow_internet = true      # 构建拉源/邮件/SMTP 都依赖外网，必须放开
-
-[verifier]
-timeout_sec = 600          # HTTP 全链路 + 等 cron + 模拟 10 位受访者 + 查库计数 + bug 单检查
+version = "1.0"
 
 [metadata]
-difficulty = "hard"        # 修复需要三层连击: 访问器对称性 + beanutils 不自动扩容 + 重载劫持属性解析
+difficulty_explanation = "hard"
 category = "debugging"
-tags = ["java", "jsp", "servlet", "struts", "mybatis", "mysql", "tomcat", "maven", "legacy"]
+
+[verifier]
+timeout_sec = 600.0
+
+[agent]
+timeout_sec = 1200.0
+
+[environment]
+cpus = 1
+memory_mb = 4096
+storage_mb = 10240
+allow_internet = true
+build_timeout_sec = 600.0
