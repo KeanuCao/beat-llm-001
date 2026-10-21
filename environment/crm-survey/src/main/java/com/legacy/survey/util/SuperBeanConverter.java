@@ -1,4 +1,4 @@
-package com.legacy.survey;
+package com.legacy.survey.util;
 
 import java.util.Map;
 

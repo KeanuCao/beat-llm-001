@@ -19,7 +19,7 @@ import org.apache.struts.action.ActionMapping;
 
 import com.legacy.survey.Answer;
 import com.legacy.survey.BaseSurveyItem;
-import com.legacy.survey.SuperBeanConverter;
+import com.legacy.survey.util.SuperBeanConverter;
 import com.legacy.survey.Question;
 import com.legacy.survey.Survey;
 import com.legacy.survey.SurveyFeedback;
