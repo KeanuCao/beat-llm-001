@@ -11,7 +11,7 @@ import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
 import org.apache.struts.actions.DispatchAction;
 
-import com.legacy.survey.User;
+import com.legacy.survey.pojo.User;
 import com.legacy.survey.dao.MyBatisUtil;
 import com.legacy.survey.dao.UserMapper;
 import com.legacy.survey.util.MD5Util;

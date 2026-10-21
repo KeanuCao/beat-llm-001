@@ -4,18 +4,18 @@
 <mapper namespace="com.legacy.survey.dao.StandardQuestionMapper">
 
     <!-- 题库全量, 选项数让页面自己数 -->
-    <select id="selectAll" resultType="com.legacy.survey.Question">
+    <select id="selectAll" resultType="com.legacy.survey.pojo.Question">
         select id, question_type type, content text, sort_no sort
         from standard_question where is_deleted = 0 order by id
     </select>
 
-    <select id="selectById" resultType="com.legacy.survey.Question">
+    <select id="selectById" resultType="com.legacy.survey.pojo.Question">
         select id, question_type type, content text, sort_no sort
         from standard_question
         where id = #{id} and is_deleted = 0
     </select>
 
-    <select id="selectOptionsByQuestionId" resultType="com.legacy.survey.Answer">
+    <select id="selectOptionsByQuestionId" resultType="com.legacy.survey.pojo.Answer">
         select id, option_content content, sort_no sort
         from standard_question_option
         where standard_question_id = #{standardQuestionId} order by sort_no

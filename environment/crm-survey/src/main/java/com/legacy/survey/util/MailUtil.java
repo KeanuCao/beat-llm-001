@@ -17,7 +17,7 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-import com.legacy.survey.Survey;
+import com.legacy.survey.pojo.Survey;
 
 /**
  * 邮件投递: SMTP 真发; 发出去的顺手留档一份 .eml (当年网关扫盘的老习惯, 现在留底备查)

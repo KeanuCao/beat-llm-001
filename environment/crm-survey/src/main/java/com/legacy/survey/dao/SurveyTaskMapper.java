@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
-import com.legacy.survey.SurveyTask;
+import com.legacy.survey.pojo.SurveyTask;
 
 /**
  * survey_task 表的 Mapper (定时任务扫描用)

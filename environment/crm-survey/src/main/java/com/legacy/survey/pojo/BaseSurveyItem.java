@@ -1,4 +1,4 @@
-package com.legacy.survey;
+package com.legacy.survey.pojo;
 
 import java.io.Serializable;
 

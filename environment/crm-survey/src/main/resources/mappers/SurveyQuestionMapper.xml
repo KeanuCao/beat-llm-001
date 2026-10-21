@@ -25,7 +25,7 @@
             (#{surveyQuestionId}, #{standardQuestionOptionId}, #{content}, #{sortNo}, NOW())
     </insert>
 
-    <select id="selectBySurveyId" resultType="com.legacy.survey.Question">
+    <select id="selectBySurveyId" resultType="com.legacy.survey.pojo.Question">
         SELECT id, survey_id AS surveyId, standard_question_id AS standardQuestionId,
                question_type AS type, content AS text, is_required AS isRequired, sort_no AS sort
         FROM survey_question
@@ -33,7 +33,7 @@
         ORDER BY sort_no
     </select>
 
-    <select id="selectOptionsByQuestionId" resultType="com.legacy.survey.Answer">
+    <select id="selectOptionsByQuestionId" resultType="com.legacy.survey.pojo.Answer">
         SELECT id, option_content AS content, sort_no AS sort
         FROM survey_question_option
         WHERE survey_question_id = #{surveyQuestionId}

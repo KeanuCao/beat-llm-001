@@ -1,4 +1,4 @@
-package com.legacy.survey;
+package com.legacy.survey.pojo;
 
 /**
  * 题目的回答/选项条目

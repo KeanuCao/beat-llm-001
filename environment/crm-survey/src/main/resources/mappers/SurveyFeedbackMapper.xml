@@ -23,7 +23,7 @@
     </insert>
 
     <!-- 谁答过这份问卷 -->
-    <select id="selectBySurveyId" resultType="com.legacy.survey.SurveyFeedback">
+    <select id="selectBySurveyId" resultType="com.legacy.survey.pojo.SurveyFeedback">
         SELECT id, invite_uuid AS inviteUuid, survey_id AS surveyId, email, create_time AS createTime
           FROM survey_feedback
          WHERE survey_id = #{surveyId}
@@ -31,7 +31,7 @@
     </select>
 
     <!-- 题干快照直接用, 不回联 survey_question -->
-    <select id="selectQuestionsByFeedbackId" resultType="com.legacy.survey.SurveyFeedbackQuestion">
+    <select id="selectQuestionsByFeedbackId" resultType="com.legacy.survey.pojo.SurveyFeedbackQuestion">
         SELECT id, feedback_id AS feedbackId, question_id AS questionId, question_type AS questionType,
                question_content AS questionContent, answer_content AS answerContent, create_time AS createTime
           FROM survey_feedback_question
@@ -40,7 +40,7 @@
     </select>
 
     <!-- 多选的话这里就是好几行 -->
-    <select id="selectOptionsByFeedbackQuestionId" resultType="com.legacy.survey.SurveyFeedbackOption">
+    <select id="selectOptionsByFeedbackQuestionId" resultType="com.legacy.survey.pojo.SurveyFeedbackOption">
         SELECT id, feedback_question_id AS feedbackQuestionId, option_id AS optionId,
                option_content AS optionContent, create_time AS createTime
           FROM survey_feedback_option

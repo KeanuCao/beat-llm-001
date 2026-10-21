@@ -3,13 +3,13 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.legacy.survey.dao.SurveyMapper">
 
-    <select id="selectAll" resultType="com.legacy.survey.Survey">
+    <select id="selectAll" resultType="com.legacy.survey.pojo.Survey">
         SELECT * FROM `survey`
         WHERE `is_deleted` = 0
         ORDER BY `id` DESC
     </select>
 
-    <select id="selectById" resultType="com.legacy.survey.Survey">
+    <select id="selectById" resultType="com.legacy.survey.pojo.Survey">
         SELECT * FROM `survey` WHERE `id` = #{id} AND `is_deleted` = 0
     </select>
 

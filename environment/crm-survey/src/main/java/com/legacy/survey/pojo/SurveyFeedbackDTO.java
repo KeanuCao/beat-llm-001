@@ -1,4 +1,4 @@
-package com.legacy.survey;
+package com.legacy.survey.pojo;
 
 /**
  * 受访者作答 DTO

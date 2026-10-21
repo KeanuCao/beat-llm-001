@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
-import com.legacy.survey.Survey;
+import com.legacy.survey.pojo.Survey;
 
 /**
  * survey 主表的 Mapper

@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
-import com.legacy.survey.User;
+import com.legacy.survey.pojo.User;
 
 /**
  * sys_user 表的 Mapper

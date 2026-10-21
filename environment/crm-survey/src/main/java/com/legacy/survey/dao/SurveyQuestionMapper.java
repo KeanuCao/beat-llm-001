@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
-import com.legacy.survey.Answer;
-import com.legacy.survey.Question;
+import com.legacy.survey.pojo.Question;
+import com.legacy.survey.pojo.Answer;
 
 /**
  * survey_question / survey_question_option 表的 Mapper (iBatis 升 MyBatis 3.2 之后改成接口式)

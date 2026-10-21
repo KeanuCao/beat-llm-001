@@ -7,9 +7,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ibatis.session.SqlSession;
 
-import com.legacy.survey.Survey;
-import com.legacy.survey.SurveyInvite;
-import com.legacy.survey.SurveyTask;
+import com.legacy.survey.pojo.Survey;
+import com.legacy.survey.pojo.SurveyInvite;
+import com.legacy.survey.pojo.SurveyTask;
 import com.legacy.survey.dao.MyBatisUtil;
 import com.legacy.survey.dao.SurveyInviteMapper;
 import com.legacy.survey.dao.SurveyMapper;

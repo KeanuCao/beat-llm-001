@@ -5,7 +5,7 @@
 <mapper namespace="com.legacy.survey.dao.UserMapper">
 
 	<!-- 跟别的项目学的 resultMap 写法, 其实 alias 也一样 -->
-	<resultMap id="UserMap" type="com.legacy.survey.User">
+	<resultMap id="UserMap" type="com.legacy.survey.pojo.User">
 		<id column="id" property="id"/>
 		<result column="username" property="username"/>
 		<result column="password" property="password"/>

@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
-import com.legacy.survey.Answer;
-import com.legacy.survey.Question;
+import com.legacy.survey.pojo.Answer;
+import com.legacy.survey.pojo.Question;
 
 /**
  * 标准题库 (standard_question / standard_question_option) 的 Mapper

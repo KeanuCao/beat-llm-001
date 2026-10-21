@@ -2,7 +2,7 @@ package com.legacy.survey.dao;
 
 import org.apache.ibatis.annotations.Param;
 
-import com.legacy.survey.SurveyInvite;
+import com.legacy.survey.pojo.SurveyInvite;
 
 /**
  * survey_invite 表的 Mapper

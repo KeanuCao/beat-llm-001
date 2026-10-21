@@ -9,7 +9,7 @@
         VALUES (#{surveyId}, #{startDate}, #{endDate}, #{emails}, #{status}, #{errorMsg}, #{sendTime}, sysdate(), sysdate())
     </insert>
 
-    <select id="selectPending" resultType="com.legacy.survey.SurveyTask">
+    <select id="selectPending" resultType="com.legacy.survey.pojo.SurveyTask">
         SELECT id, survey_id AS surveyId, start_date AS startDate, end_date AS endDate,
                emails, status, error_msg AS errorMsg, send_time AS sendTime
           FROM survey_task

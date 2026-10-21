@@ -4,9 +4,9 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
-import com.legacy.survey.SurveyFeedback;
-import com.legacy.survey.SurveyFeedbackOption;
-import com.legacy.survey.SurveyFeedbackQuestion;
+import com.legacy.survey.pojo.SurveyFeedback;
+import com.legacy.survey.pojo.SurveyFeedbackOption;
+import com.legacy.survey.pojo.SurveyFeedbackQuestion;
 
 /**
  * 反馈三表 (survey_feedback / survey_feedback_question / survey_feedback_option) 的 Mapper
