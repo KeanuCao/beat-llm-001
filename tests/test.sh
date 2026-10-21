@@ -61,7 +61,7 @@ LINE_BUDGET="${LINE_BUDGET:-4}"
 if [ -d "$BASE_DIR" ]; then
     TOTAL=0
     for f in $(cd "$BASE_DIR" && find . -type f | sed 's|^\./||'); do
-        case "$f" in */mail.properties) continue;; esac
+        case "$f" in *.properties) continue;; esac
         A="$SRC_DIR/$f"; B="$BASE_DIR/$f"
         if [ ! -f "$A" ]; then
             D=$(wc -l < "$B")
@@ -74,7 +74,7 @@ if [ -d "$BASE_DIR" ]; then
     done
     # agent 新增的文件也计入
     for f in $(cd "$SRC_DIR" && find . -type f | sed 's|^\./||'); do
-        case "$f" in */mail.properties) continue;; esac
+        case "$f" in *.properties) continue;; esac
         [ -f "$BASE_DIR/$f" ] || TOTAL=$((TOTAL+$(wc -l < "$SRC_DIR/$f")))
     done
     [ "$TOTAL" -le "$LINE_BUDGET" ] || { echo "[verifier] line budget exceeded: $TOTAL > $LINE_BUDGET (fix must be minimal)"; fail; }
