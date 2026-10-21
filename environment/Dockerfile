@@ -57,8 +57,9 @@ RUN set -e; \
     rm -rf /usr/local/tomcat/webapps/*
 
 # 库的字符集老配置: 中国区 utf8 (2006 年还没 utf8mb4 这东西)
-RUN printf '[mysqld]\ncharacter-set-server=utf8\ncollation-server=utf8_general_ci\n' \
-    > /etc/my.cnf.d/charset.cnf
+# (RHEL 系的 my.cnf 不含 my.cnf.d 的 include, 直接追加主文件; 追加同名段按合并语义生效)
+RUN printf '\n[mysqld]\ncharacter-set-server=utf8\ncollation-server=utf8_general_ci\n' \
+    >> /etc/my.cnf
 
 # 应用源码 (agent 的工作区就是它)
 COPY crm-survey /opt/crm-survey
