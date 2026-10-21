@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# py2/py3 双兼容 (CentOS 7 只有 python 2.7); solve.sh 用的是 sed 版, 本文件是等价 python 实现
 """
 oracle 转换器: 把题目源码转换成已解状态。
 
