@@ -8,8 +8,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # 时区老规矩, 东八区
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# 内网软件源 (运维统一下发的 sources.list, 走 aliyun)
-RUN sed -i 's|archive.ubuntu.com|mirrors.aliyun.com|g; s|security.ubuntu.com|mirrors.aliyun.com|g' \
+# 内网软件源 (运维统一下发的 sources.list, 走清华)
+RUN sed -i 's|archive.ubuntu.com|mirrors.tuna.tsinghua.edu.cn|g; s|security.ubuntu.com|mirrors.tuna.tsinghua.edu.cn|g' \
     /etc/apt/sources.list
 
 # 构建期别让 apt 尝试起服务 (容器里没有 systemd)
