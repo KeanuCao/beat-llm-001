@@ -8,6 +8,7 @@
 #   3.   仓库根 bugs/BUG-*.md, 五节: 标题/复现步骤/根本原因/影响范围/修复方案
 # 具 (问卷/题目/选项/邀请) 由本脚本直插数据库构造, 邮箱和 uuid 每次随机,
 # agent 无法预埋 —— 结构性反硬编码。
+# 验收前强制以 /opt/crm-survey 源码重建部署 (验收对象永远是源码的产物)。
 # 任何一步失败/超时/崩溃, reward 一律记 0。
 #
 # 用法: 在仓库根执行, 或用环境变量覆盖:
@@ -23,6 +24,8 @@ APP_URL="${APP_URL:-http://localhost:8080/crm-survey}"
 DB_HOST="${DB_HOST:-db}"; DB_PORT="${DB_PORT:-3306}"
 DB_USER="${DB_USER:-crm}"; DB_PASS="${DB_PASS:-crm123}"; DB_NAME="${DB_NAME:-crm_survey}"
 SRC_DIR="${SRC_DIR:-/opt/crm-survey/src}"
+APP_HOME="${APP_HOME:-/opt/crm-survey}"
+CATALINA_HOME="${CATALINA_HOME:-/usr/local/tomcat}"
 BUGS_DIR="${BUGS_DIR:-/opt/crm-survey/bugs}"
 REPO_DIR="${REPO_DIR:-$PWD}"
 
@@ -69,6 +72,23 @@ case "$TEXE" in
     *java-1.8*|*java-8*|*jdk1.8*) : ;;
     *) echo "[verifier] app must run on JDK 8 (got: $TEXE)"; fail ;;
 esac
+
+# ---------- 1.3 强制以源码重建部署: 验收对象永远是 src 编译出来的产物 ----------
+# (堵"改 war 不改源码"的脱钩路径; 交付不可构建也在此拦下)
+echo "[verifier] rebuilding from $APP_HOME ..."
+( cd "$APP_HOME" && mvn -B -q -o -DskipTests clean package ) || { echo "[verifier] build from src failed"; fail; }
+$CATALINA_HOME/bin/catalina.sh stop >/dev/null 2>&1 || true
+sleep 3
+rm -rf "$CATALINA_HOME/webapps/crm-survey"
+cp -f "$APP_HOME/target/crm-survey.war" "$CATALINA_HOME/webapps/"
+$CATALINA_HOME/bin/catalina.sh start >/dev/null 2>&1
+CODE=""
+for i in $(seq 1 45); do
+    CODE=$(http -o /dev/null -w "%{http_code}" "$APP_URL/login.jsp")
+    [ "$CODE" = "200" ] && break
+    sleep 2
+done
+[ "$CODE" = "200" ] || { echo "[verifier] app not ready after rebuild: $CODE"; fail; }
 
 # ---------- 1.5 改动预算 (修复最小化: 总 diff 行数 <= 预算) ----------
 # 基线 = 镜像构建时固化的原始 src 快照 (环境侧 /opt/.baseline/src.tar.gz);
@@ -193,7 +213,7 @@ FO=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id 
 [ "$FQ" = "20" ] || { echo "[verifier] feedback_question rows=$FQ want 20"; fail; }
 [ "$FO" = "20" ] || { echo "[verifier] feedback_option rows=$FO want 20"; fail; }
 
-# ---------- 4.5 逐邀请验收: 每人恰好 1 主记录 + 2 题干 + 2 选项, 一个都不能多不能少 ----------
+# ---------- 4.5 逐邀请验收: 每人恰好 1 主记录 + 2 题干 + 2 选项, 且内容关联逐人对 ----------
 n=0
 while read -r U E; do
     n=$((n+1))
@@ -201,22 +221,13 @@ while read -r U E; do
     [ -n "$FID" ] || { echo "[verifier] r$n feedback row missing"; fail; }
     QN=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID;")
     [ "$QN" = "2" ] || { echo "[verifier] r$n feedback_question=$QN want 2"; fail; }
+    QC=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID AND ((question_id=$Q1 AND question_content='$Q1TEXT') OR (question_id=$Q2 AND question_content='$Q2TEXT'));")
+    [ "$QC" = "2" ] || { echo "[verifier] r$n question snapshot content mismatch"; fail; }
     ON=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID);")
     [ "$ON" = "2" ] || { echo "[verifier] r$n feedback_option=$ON want 2"; fail; }
+    OC=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID) AND ((option_id=$O12 AND option_content='选项乙-$STAMP') OR (option_id=$O23 AND option_content='黄-$STAMP'));")
+    [ "$OC" = "2" ] || { echo "[verifier] r$n option content/link mismatch"; fail; }
 done < "/tmp/verifier-invites-$STAMP.txt"
-
-# ---------- 4.6 内容与关联抽查 (第 1 位受访者): 落库的不只是行数, 内容和关联也要对 ----------
-[ -n "$U1" ] || { echo "[verifier] first invite missing"; fail; }
-FID=$(db "SELECT id FROM survey_feedback WHERE invite_uuid='$U1';")
-[ -n "$FID" ] || { echo "[verifier] feedback row for r1 missing"; fail; }
-Q1ROW=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q1 AND question_type=1 AND question_content='$Q1TEXT';")
-[ "$Q1ROW" = "1" ] || { echo "[verifier] r1 question snapshot mismatch"; fail; }
-Q2ROW=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q2 AND question_type=1 AND question_content='$Q2TEXT';")
-[ "$Q2ROW" = "1" ] || { echo "[verifier] r1 question snapshot mismatch (q2)"; fail; }
-O1ROW=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE option_id=$O12 AND option_content='选项乙-$STAMP' AND feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q1);")
-[ "$O1ROW" = "1" ] || { echo "[verifier] r1 option content/link mismatch (q1)"; fail; }
-O2ROW=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE option_id=$O23 AND option_content='黄-$STAMP' AND feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q2);")
-[ "$O2ROW" = "1" ] || { echo "[verifier] r1 option content/link mismatch (q2)"; fail; }
 
 # ---------- 4.7 终态复验: 全部提交结束后再数一遍, 数据要还是那些 (落库不是内存假象) ----------
 FB2=$(db "SELECT COUNT(*) FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV);")
