@@ -23,9 +23,11 @@ rm -rf $CATALINA_HOME/webapps/crm-survey
 cp -f target/crm-survey.war $CATALINA_HOME/webapps/
 $CATALINA_HOME/bin/catalina.sh start >/dev/null 2>&1
 
-# 3) 数据库: 没在跑就拉起 (部署不动库)
+# 3) 数据库: 拉起服务 (幂等); 首次使用时建库+种子 (建过就不动, 重复部署不重置数据)
 if ! mysqladmin --silent ping >/dev/null 2>&1; then
-    ( mysqld_safe --user=mysql >/dev/null 2>&1 & )
+    service mariadb start >/dev/null 2>&1 \
+        || service mysql start >/dev/null 2>&1 \
+        || { echo ">>> mysqld 起不来, 看 /var/log/mysql/error.log"; exit 1; }
 fi
 DB_OK=""
 for i in $(seq 1 90); do
@@ -33,6 +35,17 @@ for i in $(seq 1 90); do
     sleep 2
 done
 [ -n "$DB_OK" ] || { echo ">>> 数据库起不来, 看 /var/log/mysql/error.log"; exit 1; }
+if [ ! -d /var/lib/mysql/crm_survey ]; then
+    echo ">>> 数据库首次初始化: 建库 / 账号 / 种子数据..."
+    mysql -e "DELETE FROM mysql.user WHERE user=''; FLUSH PRIVILEGES;" \
+        || { echo ">>> 清理匿名用户失败"; exit 1; }
+    mysql -e "CREATE DATABASE IF NOT EXISTS crm_survey DEFAULT CHARACTER SET utf8; \
+              CREATE USER IF NOT EXISTS 'crm'@'%' IDENTIFIED BY 'crm123'; \
+              GRANT ALL PRIVILEGES ON crm_survey.* TO 'crm'@'%'; \
+              FLUSH PRIVILEGES;" || { echo ">>> 建库/建号失败"; exit 1; }
+    mysql < /opt/crm-survey/schema.sql || { echo ">>> schema 导入失败"; exit 1; }
+    mysql < /opt/crm-survey/init-admin.sql || { echo ">>> 管理员种子导入失败"; exit 1; }
+fi
 mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -N -s -e "SELECT 1;" >/dev/null 2>&1 \
     || { echo ">>> crm 账号连不上 (数据目录异常?), 考虑重建容器"; exit 1; }
 

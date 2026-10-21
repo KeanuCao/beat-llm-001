@@ -80,24 +80,8 @@ RUN mvn -B -q -DskipTests clean package
 # 构建期就把 war 部署进 webapps (运行期换包即可, 不用从 target 拷)
 RUN cp -f /opt/crm-survey/target/crm-survey.war $CATALINA_HOME/webapps/
 
-# 数据库初始化全部在构建期: datadir (apt 安装时已初始化, 此处兜底) + 清匿名 + 建库/账号 + 种子
-# (harbor 起容器是 run -d 即返, 运行期初始化会被 oracle/verifier 撞上车 —— 竞态;
-#  构建期失败 = build 失败, 问题在镜像层就显形。重建容器 = datadir 回镜像层 = 数据重置)
-# 匿名用户会按 host 优先匹配吃掉本机 TCP 连接, 把 crm@'%' 顶成 Access denied —— 必须清
-RUN set -e; \
-    [ -d /var/lib/mysql/mysql ] || mariadb-install-db --user=mysql --datadir=/var/lib/mysql >/dev/null 2>&1; \
-    ( mysqld_safe --user=mysql >/dev/null 2>&1 & ); \
-    for i in $(seq 1 60); do mysqladmin --silent ping >/dev/null 2>&1 && break; sleep 2; done; \
-    mysql -e "DELETE FROM mysql.user WHERE user=''; FLUSH PRIVILEGES;"; \
-    mysql -e "CREATE DATABASE IF NOT EXISTS crm_survey DEFAULT CHARACTER SET utf8; \
-              CREATE USER 'crm'@'%' IDENTIFIED BY 'crm123'; \
-              GRANT ALL PRIVILEGES ON crm_survey.* TO 'crm'@'%'; \
-              FLUSH PRIVILEGES;"; \
-    mysql < /opt/crm-survey/schema.sql; \
-    mysql < /opt/crm-survey/init-admin.sql; \
-    mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -N -s -e "SELECT COUNT(*) FROM sys_user;" | grep -q 3; \
-    mysqladmin shutdown; \
-    sleep 2
+# 数据库: apt 安装 mariadb-server 时已完成 datadir 初始化;
+# 建库/账号/种子由 deploy.sh 首次拉起时幂等完成 (见 deploy.sh) —— 镜像层不拉任何服务
 
 # 日志里中文别打问号
 ENV JAVA_OPTS="-Dfile.encoding=UTF-8"
