@@ -1,6 +1,6 @@
 #!/bin/bash
 # 一体机启动: 选 JDK -> 等 db -> 编译 -> 部署 -> Tomcat -> 就绪轮询 -> 退出
-# 本脚本是纯启动脚本, 正常终止不留常驻进程 (平台 non_terminating_process 门禁);
+# 本脚本是纯启动脚本, 正常终止不留常驻进程 (平台对脚本的静态检查);
 # 容器保活由编排层负责 (compose command), 容器内照旧可 stop/start 换包不动机器
 
 export JAVA_OPTS="$JAVA_OPTS -Dfile.encoding=UTF-8"
@@ -38,7 +38,7 @@ cp -f target/crm-survey.war $CATALINA_HOME/webapps/
 echo ">>> 启动 Tomcat 8.5, 端口 8080"
 $CATALINA_HOME/bin/catalina.sh start
 
-# 就绪轮询: 应用应答 200 才算环境起好 (oracle 首跑的教训)
+# 就绪轮询: 应用应答 200 才算环境起好
 CODE=""
 for i in $(seq 1 30); do
     CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/crm-survey/login.jsp || true)

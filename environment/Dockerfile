@@ -79,6 +79,10 @@ RUN set -e; \
 COPY crm-survey /opt/crm-survey
 WORKDIR /opt/crm-survey
 
+# 交付基线快照: 原始 src 原样存档, verifier 比对改动行数用。
+# 基线放环境侧 (镜像内), 验证侧不持有与环境逐字节相同的资产
+RUN mkdir -p /opt/.baseline && tar czf /opt/.baseline/src.tar.gz -C /opt crm-survey/src
+
 # 构建期就把 war 打出来 (镜像一起来就能用, 别让评测等编译)
 RUN mvn -B -q -DskipTests clean package
 

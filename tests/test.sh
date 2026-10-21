@@ -61,10 +61,14 @@ done
 [ "$CODE" = "200" ] || { echo "[verifier] env down: login.jsp=$CODE"; fail; }
 
 # ---------- 1.5 改动预算 (修复最小化: 总 diff 行数 <= 预算) ----------
-# 基线快照 = tests/baseline/src (交付时的原始源码); 一行修复 = 2删+2增 = 4
-BASE_DIR="${BASE_DIR:-$(cd "$(dirname "$0")" && pwd)/baseline/src}"
+# 基线 = 镜像构建时固化的原始 src 快照 (环境侧 /opt/.baseline/src.tar.gz);
+# 验证侧不持有与环境逐字节相同的资产。一行修复 = 2删+2增 = 4
+BASELINE_TAR="${BASELINE_TAR:-/opt/.baseline/src.tar.gz}"
 LINE_BUDGET="${LINE_BUDGET:-4}"
-if [ -d "$BASE_DIR" ]; then
+if [ -f "$BASELINE_TAR" ]; then
+    STAGE=$(mktemp -d)
+    tar xzf "$BASELINE_TAR" -C "$STAGE"
+    BASE_DIR="$STAGE/crm-survey/src"
     TOTAL=0
     for f in $(cd "$BASE_DIR" && find . -type f | sed 's|^\./||'); do
         case "$f" in *.properties) continue;; esac
@@ -83,6 +87,7 @@ if [ -d "$BASE_DIR" ]; then
         case "$f" in *.properties) continue;; esac
         [ -f "$BASE_DIR/$f" ] || TOTAL=$((TOTAL+$(wc -l < "$SRC_DIR/$f")))
     done
+    rm -rf "$STAGE"
     [ "$TOTAL" -le "$LINE_BUDGET" ] || { echo "[verifier] line budget exceeded: $TOTAL > $LINE_BUDGET (fix must be minimal)"; fail; }
     echo "[verifier] diff lines vs baseline: $TOTAL (budget $LINE_BUDGET)"
 fi
@@ -164,12 +169,39 @@ FO=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id 
 [ "$FQ" = "20" ] || { echo "[verifier] feedback_question rows=$FQ want 20"; fail; }
 [ "$FO" = "20" ] || { echo "[verifier] feedback_option rows=$FO want 20"; fail; }
 
-# ---------- 5. bug 单 (期望结果 3, 五节齐全) ----------
+# ---------- 4.5 内容与关联抽查 (第 1 位受访者): 落库的不只是行数, 内容和关联也要对 ----------
+U1=$(head -1 "/tmp/verifier-invites-$STAMP.txt" | cut -d' ' -f1)
+[ -n "$U1" ] || { echo "[verifier] first invite missing"; fail; }
+FID=$(db "SELECT id FROM survey_feedback WHERE invite_uuid='$U1';")
+[ -n "$FID" ] || { echo "[verifier] feedback row for r1 missing"; fail; }
+Q1ROW=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q1 AND question_type=1 AND question_content='$Q1TEXT';")
+[ "$Q1ROW" = "1" ] || { echo "[verifier] r1 question snapshot mismatch"; fail; }
+Q2ROW=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q2 AND question_type=1 AND question_content='$Q2TEXT';")
+[ "$Q2ROW" = "1" ] || { echo "[verifier] r1 question snapshot mismatch (q2)"; fail; }
+O1ROW=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE option_id=$O12 AND option_content='选项乙-$STAMP' AND feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q1);")
+[ "$O1ROW" = "1" ] || { echo "[verifier] r1 option content/link mismatch (q1)"; fail; }
+O2ROW=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE option_id=$O23 AND option_content='黄-$STAMP' AND feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q2);")
+[ "$O2ROW" = "1" ] || { echo "[verifier] r1 option content/link mismatch (q2)"; fail; }
+
+# ---------- 4.6 终态复验: 全部提交结束后再数一遍, 数据要还是那些 (落库不是内存假象) ----------
+FB2=$(db "SELECT COUNT(*) FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV);")
+FQ2=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV));")
+FO2=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV)));")
+[ "$FB2" = "10" ] && [ "$FQ2" = "20" ] && [ "$FO2" = "20" ] || { echo "[verifier] final recount drifted: $FB2/$FQ2/$FO2"; fail; }
+
+# ---------- 5. bug 单 (期望结果 3): 文件名格式 + 五节齐全且各有实质内容 ----------
 BUGFILE=$(ls "$BUGS_DIR"/BUG-*.md 2>/dev/null | head -1)
 [ -n "$BUGFILE" ] || { echo "[verifier] no bug report"; fail; }
 [ "$(wc -c < "$BUGFILE")" -gt 100 ] || { echo "[verifier] bug report too thin"; fail; }
+echo "$(basename "$BUGFILE")" | grep -qE '^BUG-[0-9]{8}-[0-9]+\.md$' || { echo "[verifier] bug report filename not BUG-<date>-<seq>.md"; fail; }
 for S in 标题 复现步骤 根本原因 影响范围 修复方案; do
     grep -q "$S" "$BUGFILE" || { echo "[verifier] bug report missing section: $S"; fail; }
+    # 节标题之后、下一节之前, 至少要有一行非空正文
+    awk -v s="$S" '
+        index($0, "## " s) || index($0, "【" s) {f=1; next}
+        f && /^#{1,6} / {f=0}
+        f && NF {c=1}
+        END {exit !c}' "$BUGFILE" || { echo "[verifier] bug report section empty: $S"; fail; }
 done
 
 # ---------- 6. 全过 ----------
