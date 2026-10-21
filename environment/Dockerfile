@@ -15,16 +15,32 @@ RUN sed -i 's|archive.ubuntu.com|mirrors.aliyun.com|g; s|security.ubuntu.com|mir
 # 构建期别让 apt 尝试起服务 (容器里没有 systemd)
 RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && chmod +x /usr/sbin/policy-rc.d
 
-# JDK 1.8 (运维上周刚升级的版本) + maven + mariadb (本机库/查库验收) + curl (联调用)
+# JDK 1.8 (运维上周刚升级的版本) + mariadb (本机库/查库验收) + curl (联调用)
+# 注意: 不用 apt 的 maven —— 它强依赖 default-jre-headless (= openjdk-11 的 42MB, 纯浪费)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       openjdk-8-jdk maven mariadb-server mariadb-client curl \
+       openjdk-8-jdk mariadb-server mariadb-client curl \
     && rm -rf /var/lib/apt/lists/*
 ENV JAVA_HOME_8=/usr/lib/jvm/java-8-openjdk-amd64
 ENV JDK_VERSION=8
 
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 ENV PATH=$JAVA_HOME/bin:$PATH
+
+# Maven 3.6.3 (tarball 只认 JAVA_HOME, 不拖 default-jre 依赖; huaweicloud tarball)
+ENV MAVEN_HOME=/usr/local/maven
+ENV PATH=$MAVEN_HOME/bin:$PATH
+RUN set -e; \
+    url=https://repo.huaweicloud.com/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz; \
+    ok=0; \
+    for i in 1 2 3 4 5; do \
+        curl -4 -fSL -C - --connect-timeout 10 --max-time 180 -o /tmp/maven.tgz "$url" || true; \
+        if gzip -t /tmp/maven.tgz 2>/dev/null; then ok=1; break; fi; \
+        rm -f /tmp/maven.tgz; \
+    done; \
+    test "$ok" = "1"; \
+    tar xzf /tmp/maven.tgz -C /usr/local; \
+    ln -s /usr/local/apache-maven-3.6.3 /usr/local/maven
 
 # 私服镜像 (aliyun), 中央仓库慢到哭的年代遗留
 COPY maven-settings.xml /root/.m2/settings.xml
