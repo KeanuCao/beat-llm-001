@@ -1,6 +1,6 @@
 ---
 name: harbor-submit
-description: 题包推送平台送审前的自检清单 —— compose 键白名单、脚本可终止、反作弊三查、题面与验收逐字对齐、沙箱双态回归。改完 environment/、tests/、instruction.md、solution/ 准备 push 送审时必跑。
+description: 题包推送平台送审前的自检清单 —— task.toml 格式、compose 键白名单、脚本可终止、反作弊三查、题面与验收逐字对齐、沙箱双态回归。改完 environment/、tests/、instruction.md、solution/ 准备 push 送审时必跑。
 ---
 
 # 平台送审自检（一次过清单）
@@ -8,7 +8,25 @@ description: 题包推送平台送审前的自检清单 —— compose 键白名
 三轮送审三轮翻车的坑全沉淀在这里。**任何涉及 environment/、tests/、
 instruction.md、solution/ 的改动，push 前把五节全部过一遍。**
 
-## 1. compose 键白名单（launch 硬门禁，一键违规整个评测起不来）
+## 1. 结构门禁：task.toml 格式 + compose 键白名单（launch 硬门禁，一键违规整个评测起不来）
+
+**task.toml 格式校验**（第一道门）：`schema_version` 必须 ≥ **"1.3"**（平台校验要求，
+早期缺这一行被整份打回）。以仓库当前 task.toml 为基准模板 —— 已通过平台校验：
+
+```toml
+schema_version = "1.3"
+
+[task]          # name / authors / version
+[metadata]      # category = "debugging" / difficulty_explanation = "hard"
+[verifier]      # timeout_sec = 600.0
+[agent]         # timeout_sec = 1200.0
+[environment]   # cpus / memory_mb / storage_mb / allow_internet / build_timeout_sec
+```
+
+改 task.toml 只在这个骨架上动字段值，不删节不降版本号；超时数值要与 test.sh
+实际耗时匹配（verifier 现在含强制重建部署，600s 是留了余量的）。
+
+**compose 键白名单**：平台只允许这些键：
 
 平台只允许这些键：
 
@@ -21,7 +39,9 @@ stop_grace_period, stop_signal, tty, user, working_dir
 禁止：`ports`、`container_name`、`volumes`、`network_mode`、`pid`、`privileged`。
 
 坑史：第 1 轮 db 的 `container_name`+`ports`；第 3 轮 main 的 `container_name`
-复发（本地调试习惯性加回来）。**每次送审前全量校验，不是只查上轮报错的键**：
+复发（本地调试习惯性加回来）。task.toml 的坑：早期 `schema_version` 缺失/
+低于 1.3 被打回，`[metadata]` 还残留过物理题元数据（category=physics）。
+**每次送审前全量校验，不是只查上轮报错的键**：
 
 ```bash
 python3 - <<'EOF'
