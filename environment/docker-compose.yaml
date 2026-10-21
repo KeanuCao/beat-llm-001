@@ -31,5 +31,8 @@ services:
       DB_PORT: "3306"
       JDK_VERSION: "8"
       TZ: "Asia/Shanghai"
+    # entrypoint 是纯启动脚本 (就绪后正常退出, 过 non_terminating_process 门禁),
+    # 退出后由这里接管 PID1 保活容器; tomcat 在容器内照旧可 stop/start
+    command: ["/bin/bash", "-c", "/docker-entrypoint.sh && exec sleep infinity"]
     ports:
       - "8080:8080"
