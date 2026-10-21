@@ -13,7 +13,7 @@
 #
 # 用法: 在仓库根执行, 或用环境变量覆盖:
 #   APP_URL     默认 http://localhost:8080/crm-survey
-#   DB_HOST/DB_PORT/DB_USER/DB_PASS/DB_NAME  默认 127.0.0.1:8306 crm/crm123 crm_survey
+#   DB_HOST/DB_PORT/DB_USER/DB_PASS/DB_NAME  默认 db:3306 crm/crm123 crm_survey
 #   REPO_DIR    默认 $PWD (找 bugs/ 与 MaskUtil 兜底用)
 #   REWARD_FILE 默认 /logs/verifier/reward.txt
 # ============================================================

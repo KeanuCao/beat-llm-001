@@ -6,11 +6,8 @@
 export JAVA_OPTS="$JAVA_OPTS -Dfile.encoding=UTF-8"
 
 JDK_VERSION=${JDK_VERSION:-8}
-if [ "$JDK_VERSION" = "8" ]; then
-    export JAVA_HOME=${JAVA_HOME_8:-/usr/lib/jvm/java-1.8.0-openjdk}
-else
-    export JAVA_HOME=${JAVA_HOME_7:-/usr/local/jdk1.7.0_80}
-fi
+# 机器上只有 1.8 (运维上周把 1.7 升掉了), 别想着在运行时上打主意
+export JAVA_HOME=${JAVA_HOME_8:-/usr/lib/jvm/java-1.8.0-openjdk}
 export PATH="$JAVA_HOME/bin:$PATH"
 echo ">>> 使用 JDK $JDK_VERSION: $JAVA_HOME"
 "$JAVA_HOME/bin/java" -version 2>&1 | head -1

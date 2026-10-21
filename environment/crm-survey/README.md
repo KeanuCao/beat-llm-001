@@ -15,24 +15,20 @@
 
 ## 日志位置
 
-应用日志跟随 WEB 容器:
-
-| 环境 | 位置 |
-|------|------|
-| docker (交付环境) | `docker logs crm-tomcat` (app 前台运行, 标准输出即日志) |
-| 沙箱/裸机 Tomcat | `$CATALINA_BASE/logs/catalina.out` (另有 `catalina.<日期>.log` / `localhost.<日期>.log`) |
+应用日志跟随 WEB 容器: `$CATALINA_HOME/logs/catalina.out`
+(另有按天的 `catalina.<日期>.log` / `localhost.<日期>.log`)。
 
 常用关键字过滤:
 
 ```bash
 # 业务与定时任务的失败
-grep '\[ERROR\]' catalina.out
+grep '\[ERROR\]' $CATALINA_HOME/logs/catalina.out
 ```
 
 ## 一分钟自检
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/crm-survey/login.jsp   # 200
-mysql -h127.0.0.1 -P8306 -ucrm -pcrm123 crm_survey -e "SELECT COUNT(*) FROM survey_question;"
+mysql -hdb -ucrm -pcrm123 crm_survey -e "SELECT COUNT(*) FROM survey_question;"
 ls /opt/crm/mail/   # 已发送邀请的 .eml 留档
 ```

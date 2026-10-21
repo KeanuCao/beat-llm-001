@@ -1,6 +1,6 @@
 ---
 name: crm-deploy
-description: CRM 问卷系统的编译/部署/JDK 切换速查（harbor 版一体机布局：main = 开发测试一体机，db = 侧车）。
+description: CRM 问卷系统的编译/部署速查（harbor 版一体机布局：main = 开发测试一体机，db = 侧车）。
 ---
 
 # CRM 问卷系统部署速查
@@ -23,17 +23,6 @@ wsl -d talents-ai -- bash -lc 'docker exec crm-main bash -lc "cd /opt/crm-survey
 ```bash
 cd /mnt/c/wp/beat-llm-001/environment && docker compose down && docker compose up -d --build
 ```
-
-## JDK 7/8 切换（只重建 main 容器，不重建镜像）
-
-```bash
-cd /mnt/c/wp/beat-llm-001/environment
-JDK_VERSION=7 docker compose up -d --no-build --force-recreate main
-JDK_VERSION=8 docker compose up -d --no-build --force-recreate main
-docker logs crm-main 2>&1 | grep "使用 JDK"
-```
-
-注意：`docker compose restart` 不改变已注入的环境变量，切 JDK 必须 `up --force-recreate`。
 
 ## 验证
 
