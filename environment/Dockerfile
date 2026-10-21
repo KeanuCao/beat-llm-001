@@ -27,11 +27,15 @@ RUN set -e; \
     tar xzf /tmp/jdk7u80.tar.gz -C /usr/local; \
     rm -f /tmp/jdk7u80.tar.gz
 
-# JDK 1.8 (运维升级后的版本) + mariadb 客户端 (查库验收用)
-RUN yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel mariadb \
+# JDK 1.8 (运维升级后的版本) + mariadb 客户端 (查库验收用) + which (mvn 要用)
+RUN yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel mariadb which \
     && yum clean all && rm -rf /var/cache/yum
 ENV JAVA_HOME_8=/usr/lib/jvm/java-1.8.0-openjdk
 ENV JDK_VERSION=8
+
+# 构建期先用 JDK 8 (运行期由 entrypoint 按 JDK_VERSION 重选)
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+ENV PATH=$JAVA_HOME/bin:$PATH
 
 # JDK 7u80 自带 cacerts 是 2015 年的, 126 证书链校验失败; 用 JDK 8 的现代信任库覆盖
 RUN cp -L /usr/lib/jvm/java-1.8.0-openjdk/jre/lib/security/cacerts \
