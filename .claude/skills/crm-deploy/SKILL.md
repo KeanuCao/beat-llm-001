@@ -1,40 +1,66 @@
 ---
 name: crm-deploy
-description: CRM 问卷系统的编译/部署速查（harbor 版一体机布局：main = 开发测试一体机，db = 侧车）。
+description: CRM 问卷系统的编译/部署/本地测试速查（单容器一体机：应用+本机数据库一个 Dockerfile，compose 已弃用）。
 ---
 
 # CRM 问卷系统部署速查
 
-布局：`main` 服务 = 开发测试一体机（源码在 `/opt/crm-survey`，Maven/Tomcat 都在本机），
-`db` 服务 = MySQL 5.7（编排网络内 `db:3306`）。平台禁用 `ports`/`container_name`
-（compose 白名单键），服务名就是 db/main，别再用 crm-mysql/crm-main 容器名，
-宿主机查库: `docker compose exec db mysql -ucrm -pcrm123 crm_survey`。
-保活模型：`docker-entrypoint.sh` 是纯启动脚本（就绪轮询后正常退出，过平台脚本检查），PID1 由 compose 的 `command`（`&& exec sleep infinity`）
-接管；PID1 不是 Tomcat，所以容器内照旧可以 `catalina.sh stop/start` 换包。
+布局：**单容器**（`environment/Dockerfile` 一体机）= CentOS 7 + JDK 1.8 + Maven 3.3.9 +
+Tomcat 8.5.9 + mariadb-server（本机库，首启自动初始化建库导种子）+ 源码 `/opt/crm-survey`。
+应用配置 `jdbc.properties` 连 `localhost:3306`。compose 已弃用删除（平台键白名单坑多，
+详见 harbor-submit skill 第 1 节）。
 
-## 部署（改完 Java/JSP 后，在 WSL 里）
+## 本地完整演练（等价平台 oracle 流程）
 
 ```bash
-wsl -d talents-ai -- bash -lc 'docker exec crm-main bash -lc "cd /opt/crm-survey && mvn -B -q -DskipTests package && cp -f target/crm-survey.war \$CATALINA_HOME/webapps/ && \$CATALINA_HOME/bin/catalina.sh stop >/dev/null 2>&1; sleep 2; \$CATALINA_HOME/bin/startup.sh"'
+cd environment
+docker build -t crm-survey-main .
+
+# 容器名固定 crm-main —— solve.sh 的宿主机分支写死了它, 别换名字
+docker run -d --name crm-main crm-survey-main
+docker logs -f crm-main        # 等到 ">>> 环境就绪, 启动脚本退出" (首启含 mysqld 初始化, 慢属正常)
+
+# oracle: 参考解进容器执行
+docker cp ../solution crm-main:/opt/solution
+docker exec crm-main bash /opt/solution/solve.sh
+
+# verifier: 评测脚本进容器执行 (与平台一致, 容器内路径)
+docker cp ../tests crm-main:/opt/tests
+docker exec crm-main bash /opt/tests/test.sh
+docker exec crm-main cat /logs/verifier/reward.txt    # 期望 1
 ```
 
-## 完整重建（重置数据库：改了 schema/init-admin/Dockerfile/compose 时）
+## 改完 Java/JSP 后快速重部署（容器内）
 
 ```bash
-cd /mnt/c/wp/beat-llm-001/environment && docker compose down && docker compose up -d --build
+docker exec crm-main bash -lc 'cd /opt/crm-survey && mvn -B -q -DskipTests package && \
+  cp -f target/crm-survey.war $CATALINA_HOME/webapps/ && \
+  $CATALINA_HOME/bin/catalina.sh stop >/dev/null 2>&1; sleep 2; $CATALINA_HOME/bin/catalina.sh start'
 ```
+
+PID1 是 sleep 不是 Tomcat, 容器内 stop/start 换包安全。
+
+## 完整重建（重置数据库：改了 schema/init-admin/Dockerfile 时）
+
+```bash
+cd environment && docker rm -f crm-main; docker build -t crm-survey-main . && docker run -d --name crm-main crm-survey-main
+```
+
+重建容器 = datadir 归零 = 首启重新初始化导种子（数据重置语义）。
 
 ## 验证
 
 ```bash
-docker compose ps && curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/crm-survey/login.jsp
+docker exec crm-main curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/crm-survey/login.jsp  # 200
+docker exec crm-main mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -e "SELECT COUNT(*) FROM survey_question;"
 ```
 
-预期：两个容器 Up，登录页 200（zhangsan/123456，admin/admin123）。
+预期：登录页 200（zhangsan/123456，admin/admin123），11 张表。
 
 ## 排障
 
-- 日志：宿主机 `docker logs crm-main`，或容器内 `$CATALINA_HOME/logs/catalina.out`
-- mysql:5.7 拉不动走 `docker.m.daocloud.io/library/mysql:5.7` 再 retag
-- 数据库宿主机端口 8306（容器内 3306），账号 crm/crm123，root 密码 root123
+- 日志：容器内 `$CATALINA_HOME/logs/catalina.out`，或 `docker logs crm-main`（entrypoint 阶段输出）
+- mysqld 起不来：进容器看 `/var/log/mariadb/mariadb.log` 与 `ls -la /var/lib/mysql`
+- 库账号 crm/crm123，root 走本地 socket 无密（`docker exec crm-main mysql -uroot crm_survey`）
 - 邮件配置：`src/main/resources/mail.properties` 不入库，从 template 复制填真值；没有它发信失败但邀请照常生成
+- 镜像构建的下载大头只剩 maven/tomcat tarball（各 ~9MB）与 yum（vault/aliyun）；沙箱验证等价环境见 harbor-submit skill 第 5 节

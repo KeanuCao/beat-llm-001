@@ -7,7 +7,7 @@
 
 ## 当前状态
 - 你现在这台机器是开发测试一体机，也是应用服务器：完整 Java Web 源码在 `/opt/crm-survey`（Maven war 工程），你的工作目录就是它
-- 数据库在另一台"机器"上（编排里的 db 容器）：db:3306，库 crm_survey，业务账号 crm/crm123，本机已装 mysql 客户端可直连查询
+- 数据库就在这台机器上（本机 mysqld，127.0.0.1:3306），库 crm_survey，业务账号 crm/crm123，本机已装 mysql 客户端可直连查询（环境重建时数据重置）
 - 构建与部署（一体机老流程）：cd /opt/crm-survey && mvn -DskipTests package，把 target/crm-survey.war 放进 Tomcat 的 webapps 再重启（catalina.sh stop / start）
 - 后台入口：http://localhost:8080/crm-survey/login.jsp（超级管理员账号见 init-admin.sql）；问卷配置的提交端点为 POST http://localhost:8080/crm-survey/surveyConfig.do
 - 受访者作答入口：邮件链接打开 http://localhost:8080/crm-survey/surveyAnswer.do?t=<邀请码>（邀请码在 survey_invite 表），作答提交同样是 POST 到这个端点

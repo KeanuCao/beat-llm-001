@@ -1,6 +1,6 @@
 ---
 name: harbor-submit
-description: 题包推送平台送审前的自检清单 —— task.toml 格式、compose 键白名单、脚本可终止、反作弊三查、题面与验收逐字对齐、沙箱双态回归。改完 environment/、tests/、instruction.md、solution/ 准备 push 送审时必跑。
+description: 题包推送平台送审前的自检清单 —— task.toml 格式、单 Dockerfile 编排形态、脚本可终止、反作弊三查、题面与验收逐字对齐、沙箱双态回归。改完 environment/、tests/、instruction.md、solution/ 准备 push 送审时必跑。
 ---
 
 # 平台送审自检（一次过清单）
@@ -27,49 +27,29 @@ schema_version = "1.3"
 实际耗时匹配（verifier 含强制重建部署，平台跑完一次"正常完成但 0"后把
 verifier 1200s / agent 2400s 翻倍给了余量 —— 平台机器比本地慢，超时宁大勿小）。
 
-**compose 键白名单**：平台只允许这些键：
+**编排形态：单 Dockerfile，无 compose**（第 1/3 轮各栽一次 compose 禁键后彻底弃用）。
+environment/ 只有 `Dockerfile` + `docker-entrypoint.sh` + `crm-survey/`；数据库
+（mariadb-server）与应用同容器，`jdbc.properties` 连 `localhost:3306`；容器保活在
+Dockerfile 的 CMD（见第 2 节）。本地测试/调试命令见 crm-deploy skill。
+task.toml 的坑史：早期 `schema_version` 缺失/低于 1.3 被打回，`[metadata]` 还残留过
+物理题元数据（category=physics）。
 
-平台只允许这些键：
-
-```
-build, command, depends_on, entrypoint, environment, expose, healthcheck,
-hostname, image, init, labels, platform, restart, stdin_open,
-stop_grace_period, stop_signal, tty, user, working_dir
-```
-
-禁止：`ports`、`container_name`、`volumes`、`network_mode`、`pid`、`privileged`。
-
-坑史：第 1 轮 db 的 `container_name`+`ports`；第 3 轮 main 的 `container_name`
-复发（本地调试习惯性加回来）。task.toml 的坑：早期 `schema_version` 缺失/
-低于 1.3 被打回，`[metadata]` 还残留过物理题元数据（category=physics）。
-**每次送审前全量校验，不是只查上轮报错的键**：
-
-```bash
-python3 - <<'EOF'
-import yaml
-doc = yaml.safe_load(open('environment/docker-compose.yaml'))
-ALLOWED = {'build','command','depends_on','entrypoint','environment','expose',
-           'healthcheck','hostname','image','init','labels','platform','restart',
-           'stdin_open','stop_grace_period','stop_signal','tty','user','working_dir'}
-for svc, cfg in doc['services'].items():
-    bad = [k for k in cfg if k not in ALLOWED]
-    if bad: print(f'FAIL {svc}: {bad}')
-print('whitelist PASS')
-EOF
-```
-
-（沙箱没有 pyyaml 时至少 `grep -nE 'container_name|ports:|volumes:' environment/docker-compose.yaml` 必须为空。）
-
-服务调试一律用服务名：`docker compose logs main` / `docker compose exec main bash`，
-不要加 `container_name` 图省事。
+**如果将来要恢复 compose**（先掂量值不值）：平台只允许这些键 ——
+`build, command, depends_on, entrypoint, environment, expose, healthcheck, hostname,
+image, init, labels, platform, restart, stdin_open, stop_grace_period, stop_signal,
+tty, user, working_dir`；禁止 `ports`、`container_name`、`volumes`、`network_mode`、
+`pid`、`privileged`。**每次送审前全量校验，不是只查上轮报错的键**（坑史：db 的
+`container_name`+`ports`；之后 main 的 `container_name` 又因本地调试习惯复发）；
+服务调试一律用服务名（`docker compose logs main` / `docker compose exec main bash`）。
 
 ## 2. 脚本可终止（non_terminating_process 门禁）
 
 - environment/ 下所有 `.sh` 不得以常驻命令收尾：`tail -F/-f`、`sleep infinity`、
   `while true`、无界 `until` 循环都算。
-- 标准模式（docker-entrypoint.sh 现状）：等 db（**有界**，超时退出 1）→ 编译/部署 →
-  后台拉服务 → 就绪轮询（**有界**）→ `exit 0`。
-- 容器保活在编排层：`command: ["/bin/bash","-c","/docker-entrypoint.sh && exec sleep infinity"]`。
+- 标准模式（docker-entrypoint.sh 现状）：初始化/拉起本机 db（**有界**，超时退出 1）→
+  编译/部署 → 后台拉 Tomcat → 就绪轮询（**有界**）→ `exit 0`。
+- 容器保活在 Dockerfile CMD：`["/bin/bash","-c","/docker-entrypoint.sh && exec sleep 100000000"]`
+  （CMD 内联不是 .sh 文件，不在本门禁打击面；纯数字秒数免老 coreutils 兼容问题）。
 - 保活设计不能害死换包流程：PID1 不要设成 java（Tomcat），否则 solve.sh 里
   `catalina.sh stop` 会连容器一起带走。
 - 连带门禁语义：动态执行视角也会查（脚本真的要能退出）。

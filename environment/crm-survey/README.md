@@ -29,6 +29,6 @@ grep '\[ERROR\]' $CATALINA_HOME/logs/catalina.out
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/crm-survey/login.jsp   # 200
-mysql -hdb -ucrm -pcrm123 crm_survey -e "SELECT COUNT(*) FROM survey_question;"
+mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -e "SELECT COUNT(*) FROM survey_question;"
 ls /opt/crm/mail/   # 已发送邀请的 .eml 留档
 ```
