@@ -61,8 +61,10 @@ tty, user, working_dir`；禁止 `ports`、`container_name`、`volumes`、`netwo
   `run -d` 即返，**没有人等启动逻辑跑完**，oracle/verifier 几秒后就冲进容器（竞态实测撞过车）。
   - 构建期 RUN：db 的 datadir/建库/种子（临时实例导完即 shutdown；重建容器 = datadir
     回镜像层 = 数据重置）、war 构建并部署进 webapps —— 镜像里全是**静态包**
-  - `CMD ["sleep", "100000000"]` 纯保活 —— **不依赖 CMD 做任何事**，harbor 是否
-    override 它都无所谓
+  - **Dockerfile 不设 CMD/ENTRYPOINT** —— 平台门禁连 Dockerfile 里的
+    `sleep <大数字>` 都按 non_terminating_process 扫（实测第 5 轮被抓）；而 harbor
+    起容器自带 command override（实测：CMD 从未被执行过、容器靠它的 command 保活），
+    写了也是摆设。本地调试时 `docker run -d ... <image> sleep 100000000` 显式给
   - 服务拉起收敛到**一个幂等脚本**（`deploy.sh`：编译→打 war→部署重启→确保 mysqld
     在跑→等就绪，重复执行=重新部署）；solve.sh 和 test.sh 开头都调它
   - 题面把脚本指给 agent："服务不随机自启，用标准脚本拉起"—— agent 不在环境管理上花时间

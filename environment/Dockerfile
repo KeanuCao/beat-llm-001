@@ -103,7 +103,6 @@ RUN set -e; \
 ENV JAVA_OPTS="-Dfile.encoding=UTF-8"
 
 # 服务管理: deploy.sh 一键打包/部署/拉服务 (幂等), agent 与评测侧都调它;
-# 容器主进程只做保活 (harbor 标准模式: run -d 即返, CMD 不干别的)
+# 容器保活由编排层负责 (harbor 起容器自带 command; 本地调试 docker run 时
+# 显式给 sleep 100000000 即可) —— 镜像本身不设 CMD, 纯静态包
 EXPOSE 8080 3306
-
-CMD ["sleep", "100000000"]

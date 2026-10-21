@@ -18,8 +18,8 @@ cd environment
 docker build -t crm-survey-main .
 
 # 容器名固定 crm-main —— solve.sh 的宿主机分支写死了它, 别换名字
-# CMD 是纯保活(sleep), 服务不起 —— solve/verifier 自己调 deploy.sh 拉起
-docker run -d --name crm-main crm-survey-main
+# 镜像无 CMD(纯静态包), run 时显式给保活; 服务不起 —— solve/verifier 自己调 deploy.sh 拉起
+docker run -d --name crm-main crm-survey-main sleep 100000000
 
 # oracle: 参考解进容器执行 (内部调用 deploy.sh 拉起服务)
 docker cp ../solution crm-main:/opt/solution
@@ -38,7 +38,7 @@ docker exec crm-main bash /opt/crm-survey/deploy.sh
 # = 编译 -> 打 war -> 部署重启应用 -> 确保 mysqld 在跑 -> 等就绪
 ```
 
-PID1 是 sleep 不是 Tomcat, 容器内 stop/start 换包安全。
+PID1 是 run 时给的 sleep, 容器内 stop/start 换包安全。
 
 ## 完整重建（重置数据库：改了 schema/init-admin/Dockerfile 时）
 
