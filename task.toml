@@ -1,15 +1,17 @@
 [task]
-version = "1.0"
+name = "KeanuCao/exam_001"
+authors = [{ name = "曹檀", email = "cao_email_t@126.com" }]
 
 [agent]
-timeout_sec = 1200         # agent 解题时间（秒）。E2E 链路（登录/CSRF/发布/邀请/定时任务）+ 修复迭代 + bug 单，难题档位
+timeout_sec = 1200         # E2E 链路（登录/CSRF/发布/邀请/定时任务）+ 修复迭代 + bug 单，难题档位
 
 [environment]
-timeout_sec = 1500         # 需覆盖 agent 时限，并给定时任务扫描（60 秒一轮）留余量
-build_timeout_sec = 600    # 三镜像构建（centos7 vault 源 + mysql5.7 + tomcat tarball），首次较慢
+build_timeout_sec = 600.0  # 三镜像构建（centos7 vault 源 + jdk7 tarball + mysql5.7），首次较慢
 cpus = 1
 memory_mb = 4096
 storage_mb = 10240         # 多镜像 + maven 仓库缓存
+gpus = 0
+allow_internet = true      # 构建拉源/邮件/SMTP 都依赖外网，必须放开
 
 [verifier]
 timeout_sec = 600          # HTTP 全链路 + 等 cron + 模拟 10 位受访者 + 查库计数 + bug 单检查
