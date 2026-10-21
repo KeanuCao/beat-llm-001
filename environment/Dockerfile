@@ -13,8 +13,9 @@ RUN sed -i -e 's|^mirrorlist=|#mirrorlist=|g' \
            -e 's|^#baseurl=http://mirror.centos.org|baseurl=https://mirrors.aliyun.com/centos-vault|g' \
            /etc/yum.repos.d/CentOS-*.repo
 
-# JDK 1.8 (运维上周刚升级的版本) + mariadb-server (本机库) + 客户端 (查库验收用) + which (mvn 要用)
-RUN yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel mariadb-server mariadb which \
+# JDK 1.8 headless (运维上周刚升级的版本; Web 应用不需要图形栈, 省掉 X11 依赖树)
+# + mariadb-server (本机库) + 客户端 (查库验收用) + which (mvn 要用)
+RUN yum install -y java-1.8.0-openjdk-headless java-1.8.0-openjdk-devel mariadb-server mariadb which \
     && yum clean all && rm -rf /var/cache/yum
 ENV JAVA_HOME_8=/usr/lib/jvm/java-1.8.0-openjdk
 ENV JDK_VERSION=8
