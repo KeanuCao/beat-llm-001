@@ -5,8 +5,10 @@ description: CRM 问卷系统的编译/部署/JDK 切换速查（harbor 版一�
 
 # CRM 问卷系统部署速查
 
-布局：`main` 容器 = 开发测试一体机（源码在 `/opt/crm-survey`，Maven/Tomcat 都在本机），
-`db` 容器 = MySQL 5.7（编排网络内 `db:3306`，宿主机 8306）。
+布局：`main` 服务 = 开发测试一体机（源码在 `/opt/crm-survey`，Maven/Tomcat 都在本机），
+`db` 服务 = MySQL 5.7（编排网络内 `db:3306`）。平台禁用 `ports`/`container_name`
+（compose 白名单键），服务名就是 db/main，别再用 crm-mysql/crm-main 容器名，
+宿主机查库: `docker compose exec db mysql -ucrm -pcrm123 crm_survey`。
 保活模型：`docker-entrypoint.sh` 是纯启动脚本（就绪轮询后正常退出，过平台脚本检查），PID1 由 compose 的 `command`（`&& exec sleep infinity`）
 接管；PID1 不是 Tomcat，所以容器内照旧可以 `catalina.sh stop/start` 换包。
 

@@ -65,11 +65,12 @@ cat > "$BUG" <<'EOF'
 
 ## 根本原因
 Question.getAnswers() 声明返回 BaseSurveyItem[](父类数组), 与该属性
-indexed 读写的 Answer 类型不一致; java.beans 内省做属性配对时抛
-"type mismatch between read and write methods", Question 的属性描述符
-构建不出来, 嵌套参数绑定瘫痪; SuperBeanConverter.populate 捕获全部
-异常且不记日志, 绑定失败被完全吞掉, 于是出现"提交成功但数据丢失"
-的静默失败。
+indexed 读写的 Answer 类型不一致。JDK 7 的 java.beans 内省对这种
+读写配对宽容, 老环境上一直没事; 上周维护窗口 JDK 升到 1.8 后,
+Introspector 严格校验读写类型配对, 抛 "type mismatch between read
+and write methods", Question 的属性描述符构建不出来, 嵌套参数绑定
+瘫痪; SuperBeanConverter.populate 捕获全部异常且不记日志, 绑定失败
+被完全吞掉, 于是出现"提交成功但数据丢失"的静默失败。
 配置链(surveyConfig.do)已改为手工解析, 不受影响, 这也是同系统只有
 受访者数据出问题的原因。
 

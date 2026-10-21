@@ -60,6 +60,16 @@ for i in $(seq 1 60); do
 done
 [ "$CODE" = "200" ] || { echo "[verifier] env down: login.jsp=$CODE"; fail; }
 
+# ---------- 1.2 运行时版本: 修复必须落在应用代码, 不许靠降级 JDK 蒙混 ----------
+# (JDK 7 的内省对读写类型配对宽容, 降回 1.7 未修复的代码也能落库 —— 必须拦)
+TPID=$(pgrep -f "org.apache.catalina.startup.Bootstrap" | head -1)
+[ -n "$TPID" ] || { echo "[verifier] tomcat process not found"; fail; }
+TEXE=$(readlink /proc/$TPID/exe 2>/dev/null)
+case "$TEXE" in
+    *java-1.8*|*java-8*|*jdk1.8*) : ;;
+    *) echo "[verifier] app must run on JDK 8 (got: $TEXE)"; fail ;;
+esac
+
 # ---------- 1.5 改动预算 (修复最小化: 总 diff 行数 <= 预算) ----------
 # 基线 = 镜像构建时固化的原始 src 快照 (环境侧 /opt/.baseline/src.tar.gz);
 # 验证侧不持有与环境逐字节相同的资产。一行修复 = 2删+2增 = 4
@@ -161,6 +171,20 @@ while read -r UUID EMAIL; do
     rm -f "$JAR"
 done < "/tmp/verifier-invites-$STAMP.txt"
 
+# ---------- 3.5 负向边界 (框架既有行为, 均不产生数据) ----------
+# a) 不带 CSRF token 的 POST 必须 403
+NCODE=$(http -o /dev/null -w "%{http_code}" -X POST "$APP_URL/surveyAnswer.do" \
+    --data-urlencode "email=fake-${STAMP}@verifier.test" || true)
+[ "$NCODE" = "403" ] || { echo "[verifier] POST w/o csrf token: want 403 got $NCODE"; fail; }
+# b) 无效邀请码 → 错误页
+BADPAGE=$(http "$APP_URL/surveyAnswer.do?t=not-a-real-uuid")
+echo "$BADPAGE" | grep -q "链接无效" || { echo "[verifier] bad uuid should hit error page"; fail; }
+# c) 已答过的邀请再次打开 → 友好提示 (不重复产生数据)
+U1=$(head -1 "/tmp/verifier-invites-$STAMP.txt" | cut -d' ' -f1)
+REP=$(http -c "/tmp/verifier-cj-re-$STAMP.jar" "$APP_URL/surveyAnswer.do?t=$U1")
+echo "$REP" | grep -q "已经回答" || { echo "[verifier] re-open answered invite should be friendly"; fail; }
+rm -f "/tmp/verifier-cj-re-$STAMP.jar"
+
 # ---------- 4. 计数验收 (期望结果 2 的数字, 零缺失 = 精确相等) ----------
 FB=$(db "SELECT COUNT(*) FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV);")
 FQ=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV));")
@@ -169,8 +193,19 @@ FO=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id 
 [ "$FQ" = "20" ] || { echo "[verifier] feedback_question rows=$FQ want 20"; fail; }
 [ "$FO" = "20" ] || { echo "[verifier] feedback_option rows=$FO want 20"; fail; }
 
-# ---------- 4.5 内容与关联抽查 (第 1 位受访者): 落库的不只是行数, 内容和关联也要对 ----------
-U1=$(head -1 "/tmp/verifier-invites-$STAMP.txt" | cut -d' ' -f1)
+# ---------- 4.5 逐邀请验收: 每人恰好 1 主记录 + 2 题干 + 2 选项, 一个都不能多不能少 ----------
+n=0
+while read -r U E; do
+    n=$((n+1))
+    FID=$(db "SELECT id FROM survey_feedback WHERE invite_uuid='$U';")
+    [ -n "$FID" ] || { echo "[verifier] r$n feedback row missing"; fail; }
+    QN=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID;")
+    [ "$QN" = "2" ] || { echo "[verifier] r$n feedback_question=$QN want 2"; fail; }
+    ON=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID);")
+    [ "$ON" = "2" ] || { echo "[verifier] r$n feedback_option=$ON want 2"; fail; }
+done < "/tmp/verifier-invites-$STAMP.txt"
+
+# ---------- 4.6 内容与关联抽查 (第 1 位受访者): 落库的不只是行数, 内容和关联也要对 ----------
 [ -n "$U1" ] || { echo "[verifier] first invite missing"; fail; }
 FID=$(db "SELECT id FROM survey_feedback WHERE invite_uuid='$U1';")
 [ -n "$FID" ] || { echo "[verifier] feedback row for r1 missing"; fail; }
@@ -183,7 +218,7 @@ O1ROW=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE option_id=$O12 AND
 O2ROW=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE option_id=$O23 AND option_content='黄-$STAMP' AND feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID AND question_id=$Q2);")
 [ "$O2ROW" = "1" ] || { echo "[verifier] r1 option content/link mismatch (q2)"; fail; }
 
-# ---------- 4.6 终态复验: 全部提交结束后再数一遍, 数据要还是那些 (落库不是内存假象) ----------
+# ---------- 4.7 终态复验: 全部提交结束后再数一遍, 数据要还是那些 (落库不是内存假象) ----------
 FB2=$(db "SELECT COUNT(*) FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV);")
 FQ2=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV));")
 FO2=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV)));")
