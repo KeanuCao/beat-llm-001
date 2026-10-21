@@ -44,6 +44,14 @@ for i in $(seq 1 30); do
 done
 [ "$CODE" = "200" ] || { echo ">>> 应用未就绪, 看日志: $CATALINA_HOME/logs/catalina.out"; exit 1; }
 
+echo ">>> 等待数据库就绪..."
+DB_OK=""
+for i in $(seq 1 90); do
+    if mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -N -s -e "SELECT 1;" >/dev/null 2>&1; then DB_OK=1; break; fi
+    sleep 2
+done
+[ -n "$DB_OK" ] || { echo ">>> 数据库未就绪, 看日志: /var/log/mariadb/mariadb.log"; exit 1; }
+
 echo ">>> 部署完成, 可以跑评测了"
 echo ">>> 改动行数: git diff --numstat (应为 2 删 2 增, 预算内)"
 

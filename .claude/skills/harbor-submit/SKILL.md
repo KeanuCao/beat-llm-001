@@ -46,8 +46,13 @@ tty, user, working_dir`；禁止 `ports`、`container_name`、`volumes`、`netwo
 
 - environment/ 下所有 `.sh` 不得以常驻命令收尾：`tail -F/-f`、`sleep infinity`、
   `while true`、无界 `until` 循环都算。
-- 标准模式（docker-entrypoint.sh 现状）：初始化/拉起本机 db（**有界**，超时退出 1）→
-  编译/部署 → 后台拉 Tomcat → 就绪轮询（**有界**）→ `exit 0`。
+- **铁律：一切初始化放构建期（RUN）** —— harbor 起容器是 `run -d` 即返，
+  **没有人等 entrypoint 跑完**，oracle/verifier 几秒后就冲进容器（竞态实测撞过车）。
+  entrypoint 只做：起进程（datadir 已就绪所以秒级）→ 就绪自检（TCP+业务账号）→
+  `exit 0`。db 的 datadir/建库/种子全部在镜像层完成（RUN 内临时实例导完即 shutdown）；
+  重建容器 = datadir 回镜像层 = 数据重置，语义保持。
+- **竞态三重兜底**：solve.sh 等"应用+db"就绪；test.sh 造具前等 db 连通；题面注明
+  "服务未就绪稍等再试"。
 - 容器保活在 Dockerfile CMD：`["/bin/bash","-c","/docker-entrypoint.sh && exec sleep 100000000"]`
   （CMD 内联不是 .sh 文件，不在本门禁打击面；纯数字秒数免老 coreutils 兼容问题）。
 - 保活设计不能害死换包流程：PID1 不要设成 java（Tomcat），否则 solve.sh 里

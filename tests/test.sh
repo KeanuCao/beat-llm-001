@@ -131,6 +131,14 @@ fi
 }
 
 # ---------- 2. 造具 (裁判侧, 直插; 全部带时间戳防撞) ----------
+# 先等 db 连通 (容器刚起时 mysqld 可能还在启动中)
+DB_OK=""
+for i in $(seq 1 90); do
+    if db "SELECT 1;" | grep -q 1; then DB_OK=1; break; fi
+    sleep 2
+done
+[ -n "$DB_OK" ] || { echo "[verifier] db not reachable"; fail; }
+
 STAMP=$(date +%s)
 SID=$(db "INSERT INTO survey (title, description, status, creator_id, publish_time, is_deleted, create_time, update_time)
 VALUES ('评测问卷-$STAMP', 'verifier fixture', 1, 1, NOW(), 0, NOW(), NOW()); SELECT LAST_INSERT_ID();")

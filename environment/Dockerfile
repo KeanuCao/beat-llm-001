@@ -73,6 +73,29 @@ RUN mkdir -p /opt/.baseline && tar czf /opt/.baseline/src.tar.gz -C /opt crm-sur
 # 构建期就把 war 打出来 (镜像一起来就能用, 别让评测等编译)
 RUN mvn -B -q -DskipTests clean package
 
+# 构建期就把 war 部署进 webapps (运行期换包即可, 不用从 target 拷)
+RUN cp -f /opt/crm-survey/target/crm-survey.war $CATALINA_HOME/webapps/
+
+# 数据库初始化全部在构建期: datadir + 清匿名 + 建库/账号 + 种子
+# (harbor 起容器是 run -d 即返, 运行期初始化会被 oracle/verifier 撞上车 —— 竞态;
+#  构建期失败 = build 失败, 问题在镜像层就显形。重建容器 = datadir 回镜像层 = 数据重置)
+# mysql_install_db 会留匿名用户; 账号匹配 host 优先于 user, ''@localhost 会吃掉
+# 本机 TCP 连接把 crm@'%' 顶成 Access denied —— 必须清
+RUN set -e; \
+    mysql_install_db --user=mysql --datadir=/var/lib/mysql >/dev/null 2>&1; \
+    ( mysqld_safe --user=mysql >/dev/null 2>&1 & ); \
+    for i in $(seq 1 60); do mysqladmin --silent ping >/dev/null 2>&1 && break; sleep 2; done; \
+    mysql -e "DELETE FROM mysql.user WHERE user=''; FLUSH PRIVILEGES;"; \
+    mysql -e "CREATE DATABASE IF NOT EXISTS crm_survey DEFAULT CHARACTER SET utf8; \
+              CREATE USER IF NOT EXISTS 'crm'@'%' IDENTIFIED BY 'crm123'; \
+              GRANT ALL PRIVILEGES ON crm_survey.* TO 'crm'@'%'; \
+              FLUSH PRIVILEGES;"; \
+    mysql < /opt/crm-survey/schema.sql; \
+    mysql < /opt/crm-survey/init-admin.sql; \
+    mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -N -s -e "SELECT COUNT(*) FROM sys_user;" | grep -q 3; \
+    mysqladmin shutdown; \
+    sleep 2
+
 # 日志里中文别打问号
 ENV JAVA_OPTS="-Dfile.encoding=UTF-8"
 
