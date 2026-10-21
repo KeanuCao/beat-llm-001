@@ -1,4 +1,5 @@
 [task]
+schema_version = "1.3"
 name = "KeanuCao/exam_001"
 authors = [{ name = "曹檀", email = "cao_email_t@126.com" }]
 
