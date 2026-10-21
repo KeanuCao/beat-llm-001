@@ -17,10 +17,10 @@ cd environment
 docker build -t crm-survey-main .
 
 # 容器名固定 crm-main —— solve.sh 的宿主机分支写死了它, 别换名字
+# CMD 是纯保活(sleep), 服务不起 —— solve/verifier 自己调 deploy.sh 拉起
 docker run -d --name crm-main crm-survey-main
-docker logs -f crm-main        # 等到 ">>> 环境就绪, 启动脚本退出" (首启含 mysqld 初始化, 慢属正常)
 
-# oracle: 参考解进容器执行
+# oracle: 参考解进容器执行 (内部调用 deploy.sh 拉起服务)
 docker cp ../solution crm-main:/opt/solution
 docker exec crm-main bash /opt/solution/solve.sh
 
@@ -30,12 +30,11 @@ docker exec crm-main bash /opt/tests/test.sh
 docker exec crm-main cat /logs/verifier/reward.txt    # 期望 1
 ```
 
-## 改完 Java/JSP 后快速重部署（容器内）
+## 改完 Java/JSP 后快速重部署（容器内，幂等）
 
 ```bash
-docker exec crm-main bash -lc 'cd /opt/crm-survey && mvn -B -q -DskipTests package && \
-  cp -f target/crm-survey.war $CATALINA_HOME/webapps/ && \
-  $CATALINA_HOME/bin/catalina.sh stop >/dev/null 2>&1; sleep 2; $CATALINA_HOME/bin/catalina.sh start'
+docker exec crm-main bash /opt/crm-survey/deploy.sh
+# = 编译 -> 打 war -> 部署重启应用 -> 确保 mysqld 在跑 -> 等就绪
 ```
 
 PID1 是 sleep 不是 Tomcat, 容器内 stop/start 换包安全。

@@ -7,6 +7,15 @@
 - 后台: `/crm-survey/login.jsp` (账号见 init-admin.sql)
 - 受访者: 邮件里的邀请链接 `/crm-survey/surveyAnswer.do?t=<uuid>`
 
+## 部署
+
+服务不随机自启, 用运维标准脚本一键拉起 (幂等, 改完代码重复执行即重新部署):
+
+```bash
+bash /opt/crm-survey/deploy.sh
+# = 编译源码 -> 打 war -> 部署重启应用 -> 确保 mysqld 在跑 (部署不动库) -> 等就绪
+```
+
 ## 邮件配置
 
 真值不入库: 复制 `src/main/resources/mail.properties.template` 为同目录的

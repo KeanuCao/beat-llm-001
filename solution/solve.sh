@@ -25,32 +25,8 @@ else
     echo ">>> 一行修复已应用"
 fi
 
-echo ">>> 重新编译 war..."
-mvn -B -q -DskipTests clean package
-
-echo ">>> 换包 + 重启 Tomcat..."
-$CATALINA_HOME/bin/catalina.sh stop >/dev/null 2>&1 || true
-sleep 3
-rm -rf $CATALINA_HOME/webapps/crm-survey
-cp -f target/crm-survey.war $CATALINA_HOME/webapps/
-$CATALINA_HOME/bin/startup.sh
-
-echo ">>> 等待应用就绪..."
-CODE=""
-for i in $(seq 1 30); do
-    CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/crm-survey/login.jsp || true)
-    [ "$CODE" = "200" ] && break
-    sleep 2
-done
-[ "$CODE" = "200" ] || { echo ">>> 应用未就绪, 看日志: $CATALINA_HOME/logs/catalina.out"; exit 1; }
-
-echo ">>> 等待数据库就绪..."
-DB_OK=""
-for i in $(seq 1 90); do
-    if mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -N -s -e "SELECT 1;" >/dev/null 2>&1; then DB_OK=1; break; fi
-    sleep 2
-done
-[ -n "$DB_OK" ] || { echo ">>> 数据库未就绪, 看日志: /var/log/mariadb/mariadb.log"; exit 1; }
+echo ">>> 调用运维标准脚本: 打包 + 部署 + 拉服务 + 等就绪..."
+bash /opt/crm-survey/deploy.sh
 
 echo ">>> 部署完成, 可以跑评测了"
 echo ">>> 改动行数: git diff --numstat (应为 2 删 2 增, 预算内)"

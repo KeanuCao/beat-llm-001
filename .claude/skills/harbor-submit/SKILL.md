@@ -46,13 +46,15 @@ tty, user, working_dir`；禁止 `ports`、`container_name`、`volumes`、`netwo
 
 - environment/ 下所有 `.sh` 不得以常驻命令收尾：`tail -F/-f`、`sleep infinity`、
   `while true`、无界 `until` 循环都算。
-- **铁律：一切初始化放构建期（RUN）** —— harbor 起容器是 `run -d` 即返，
-  **没有人等 entrypoint 跑完**，oracle/verifier 几秒后就冲进容器（竞态实测撞过车）。
-  entrypoint 只做：起进程（datadir 已就绪所以秒级）→ 就绪自检（TCP+业务账号）→
-  `exit 0`。db 的 datadir/建库/种子全部在镜像层完成（RUN 内临时实例导完即 shutdown）；
-  重建容器 = datadir 回镜像层 = 数据重置，语义保持。
-- **竞态三重兜底**：solve.sh 等"应用+db"就绪；test.sh 造具前等 db 连通；题面注明
-  "服务未就绪稍等再试"。
+- **铁律：一切初始化放构建期（RUN）+ 服务"谁需要谁拉起"** —— harbor 起容器是
+  `run -d` 即返，**没有人等启动逻辑跑完**，oracle/verifier 几秒后就冲进容器（竞态实测撞过车）。
+  - 构建期 RUN：db 的 datadir/建库/种子（临时实例导完即 shutdown；重建容器 = datadir
+    回镜像层 = 数据重置）、war 构建并部署进 webapps —— 镜像里全是**静态包**
+  - `CMD ["sleep", "100000000"]` 纯保活 —— **不依赖 CMD 做任何事**，harbor 是否
+    override 它都无所谓
+  - 服务拉起收敛到**一个幂等脚本**（`deploy.sh`：编译→打 war→部署重启→确保 mysqld
+    在跑→等就绪，重复执行=重新部署）；solve.sh 和 test.sh 开头都调它
+  - 题面把脚本指给 agent："服务不随机自启，用标准脚本拉起"—— agent 不在环境管理上花时间
 - 容器保活在 Dockerfile CMD：`["/bin/bash","-c","/docker-entrypoint.sh && exec sleep 100000000"]`
   （CMD 内联不是 .sh 文件，不在本门禁打击面；纯数字秒数免老 coreutils 兼容问题）。
 - 保活设计不能害死换包流程：PID1 不要设成 java（Tomcat），否则 solve.sh 里

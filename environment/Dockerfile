@@ -99,11 +99,8 @@ RUN set -e; \
 # 日志里中文别打问号
 ENV JAVA_OPTS="-Dfile.encoding=UTF-8"
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
+# 服务管理: deploy.sh 一键打包/部署/拉服务 (幂等), agent 与评测侧都调它;
+# 容器主进程只做保活 (harbor 标准模式: run -d 即返, CMD 不干别的)
 EXPOSE 8080 3306
 
-# entrypoint: 初始化并拉起本机 db + 应用, 就绪后正常退出 (脚本本身无常驻进程);
-# 保活由这里的 sleep 接管 (纯数字秒数, 老 coreutils 也认)
-CMD ["/bin/bash", "-c", "/docker-entrypoint.sh && exec sleep 100000000"]
+CMD ["sleep", "100000000"]

@@ -8,15 +8,14 @@
 ## 当前状态
 - 你现在这台机器是开发测试一体机，也是应用服务器：完整 Java Web 源码在 `/opt/crm-survey`（Maven war 工程），你的工作目录就是它
 - 数据库就在这台机器上（本机 mysqld，127.0.0.1:3306），库 crm_survey，业务账号 crm/crm123，本机已装 mysql 客户端可直连查询（环境重建时数据重置）
-- 构建与部署（一体机老流程）：cd /opt/crm-survey && mvn -DskipTests package，把 target/crm-survey.war 放进 Tomcat 的 webapps 再重启（catalina.sh stop / start）
+- 构建与部署：用运维组的标准脚本 `/opt/crm-survey/deploy.sh`（一键完成编译源码 → 打 war → 部署 → 重启应用 → 确保数据库在运行 → 等就绪），幂等可重复执行，改完代码再跑一遍就是重新部署
+- 应用和数据库**不随机器自动启动**，用上面的标准脚本拉起（服务没起时先跑它）
 - 后台入口：http://localhost:8080/crm-survey/login.jsp（超级管理员账号见 init-admin.sql）；问卷配置的提交端点为 POST http://localhost:8080/crm-survey/surveyConfig.do
 - 受访者作答入口：邮件链接打开 http://localhost:8080/crm-survey/surveyAnswer.do?t=<邀请码>（邀请码在 survey_invite 表），作答提交同样是 POST 到这个端点
 - 站点启用了 CSRF 防护，不带合法 token 的 POST 请求会被直接拒绝（403）
 - 受访者提交表单是嵌套结构：`t`（邀请码）、`email`、`questions[i].id` / `questions[i].type` / `questions[i].text`、`questions[i].answers[j].id`（选中项）/ `questions[i].answers[j].content`
 - 已答过的邀请码再打开会看到“您已经回答问卷，感谢您的参与！”，无效邀请码打开看到“链接无效”——这些既有页面行为保持不变
-- 应用机上周起运行在 JDK 1.8 上，评测验收也在 JDK 1.8 的环境下进行
-- 应用（Tomcat 8080）和数据库随机器启动，如果你刚接手时服务还没就绪（初始化中），稍等几秒再试
-- 为了保证问题在一个干净的环境被复现，我们需要自己思考问题是怎么从E2E发生的
+- 应用机上周起运行在 JDK 1.8 上，评测验收也在 JDK 1.8 的环境下进行- 为了保证问题在一个干净的环境被复现，我们需要自己思考问题是怎么从E2E发生的
 
 ## 期望结果
 1. 以模拟真实 HTTP 请求的方式（正确处理 CSRF，全程不触发 403）提交一份包含 2 道单选题、每题 3 个选项的问卷回答。

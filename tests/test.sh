@@ -25,7 +25,7 @@ DB_HOST="${DB_HOST:-127.0.0.1}"; DB_PORT="${DB_PORT:-3306}"
 DB_USER="${DB_USER:-crm}"; DB_PASS="${DB_PASS:-crm123}"; DB_NAME="${DB_NAME:-crm_survey}"
 SRC_DIR="${SRC_DIR:-/opt/crm-survey/src}"
 APP_HOME="${APP_HOME:-/opt/crm-survey}"
-CATALINA_HOME="${CATALINA_HOME:-/usr/local/tomcat}"
+export CATALINA_HOME="${CATALINA_HOME:-/usr/local/tomcat}"   # deploy.sh 子进程要用
 BUGS_DIR="${BUGS_DIR:-/opt/crm-survey/bugs}"
 REPO_DIR="${REPO_DIR:-$PWD}"
 
@@ -54,17 +54,15 @@ mask_of() {
     printf '%s' "$M"
 }
 
-# ---------- 1. 环境健康 (等应用就绪, 最多约两分钟) ----------
-CODE=""
-for i in $(seq 1 60); do
-    CODE=$(http -o /dev/null -w "%{http_code}" "$APP_URL/login.jsp")
-    [ "$CODE" = "200" ] && break
-    sleep 2
-done
-[ "$CODE" = "200" ] || { echo "[verifier] env down: login.jsp=$CODE"; fail; }
+# ---------- 1. 部署: 运维标准脚本一键拉起/重新部署 (幂等) ----------
+# deploy.sh = 编译当前源码 -> 换包重启应用 -> 确保 mysqld 在跑 -> 等就绪
+# (验收对象永远是 src 的产物, 脱钩路径天然被堵; 服务不随容器自启, 谁验谁拉)
+if ! bash "$APP_HOME/deploy.sh"; then
+    echo "[verifier] deploy failed (诊断输出见上)"
+    fail
+fi
 
-# ---------- 1.2 运行时版本: 修复必须落在应用代码, 不许靠降级 JDK 蒙混 ----------
-# (JDK 7 的内省对读写类型配对宽容, 降回 1.7 未修复的代码也能落库 —— 必须拦)
+# ---------- 1.2 运行时版本 (纵深防御): 应用必须跑在 JDK 8 ----------
 TPID=$(pgrep -f "org.apache.catalina.startup.Bootstrap" | head -1)
 [ -n "$TPID" ] || { echo "[verifier] tomcat process not found"; fail; }
 TEXE=$(readlink /proc/$TPID/exe 2>/dev/null)
@@ -72,27 +70,6 @@ case "$TEXE" in
     *java-1.8*|*java-8*|*jdk1.8*) : ;;
     *) echo "[verifier] app must run on JDK 8 (got: $TEXE)"; fail ;;
 esac
-
-# ---------- 1.3 强制以源码重建部署: 验收对象永远是 src 编译出来的产物 ----------
-# (堵"改 war 不改源码"的脱钩路径; 交付不可构建也在此拦下)
-echo "[verifier] rebuilding from $APP_HOME ..."
-if ! ( cd "$APP_HOME" && mvn -B -q -o -DskipTests clean package > /tmp/verifier-build.log 2>&1 ); then
-    echo "[verifier] build from src failed, log tail:"
-    tail -30 /tmp/verifier-build.log
-    fail
-fi
-$CATALINA_HOME/bin/catalina.sh stop >/dev/null 2>&1 || true
-sleep 3
-rm -rf "$CATALINA_HOME/webapps/crm-survey"
-cp -f "$APP_HOME/target/crm-survey.war" "$CATALINA_HOME/webapps/"
-$CATALINA_HOME/bin/catalina.sh start >/dev/null 2>&1
-CODE=""
-for i in $(seq 1 45); do
-    CODE=$(http -o /dev/null -w "%{http_code}" "$APP_URL/login.jsp")
-    [ "$CODE" = "200" ] && break
-    sleep 2
-done
-[ "$CODE" = "200" ] || { echo "[verifier] app not ready after rebuild: $CODE"; fail; }
 
 # ---------- 1.5 改动预算 (修复最小化: 总 diff 行数 <= 预算) ----------
 # 基线 = 镜像构建时固化的原始 src 快照 (环境侧 /opt/.baseline/src.tar.gz);
