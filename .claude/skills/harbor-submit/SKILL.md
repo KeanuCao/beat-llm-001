@@ -63,6 +63,11 @@ tty, user, working_dir`；禁止 `ports`、`container_name`、`volumes`、`netwo
    **严禁进 tests/ 或仓库任何跟踪路径** —— 会被反作弊扫描判成"评审引导"扣分。
 3. **判分点防预埋**：fixtures 全随机（uuid/邮箱/时间戳），掩码现算；验收含运行时
    版本检查、验收前强制源码重建部署（堵改产物不改源码）；行数预算逐文件比对。
+4. **db 初始化的坑**：`mysql_install_db`（= centos 系首启行为）会留**匿名用户**
+   （''@localhost 等）；账号匹配 **host 优先于 user**，匿名行会吃掉本机 TCP 连接、
+   把具名账号顶成 `Access denied (using password: YES)` —— 建号前先
+   `DELETE FROM mysql.user WHERE user=''`；entrypoint 建完库必须用**验收同款
+   连接方式**（TCP + 业务账号）自检，不通 exit 1。
 
 ## 4. 题面 ↔ 验收逐字对齐（题面行为覆盖分）
 

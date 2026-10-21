@@ -31,12 +31,19 @@ echo ">>> 数据库就绪"
 
 if [ ! -d /var/lib/mysql/crm_survey ]; then
     echo ">>> 建库 / 账号 / 种子数据..."
+    # mysql_install_db 会留匿名用户; 账号匹配 host 优先于 user,
+    # ''@localhost 会先吃掉本机 TCP 连接, 把 crm@'%' 顶成 Access denied —— 先清掉
+    mysql -e "DELETE FROM mysql.user WHERE user=''; FLUSH PRIVILEGES;" \
+        || { echo ">>> 清理匿名用户失败"; exit 1; }
     mysql -e "CREATE DATABASE IF NOT EXISTS crm_survey DEFAULT CHARACTER SET utf8; \
               CREATE USER IF NOT EXISTS 'crm'@'%' IDENTIFIED BY 'crm123'; \
               GRANT ALL PRIVILEGES ON crm_survey.* TO 'crm'@'%'; \
               FLUSH PRIVILEGES;" || { echo ">>> 建库/建号失败"; exit 1; }
     mysql < /opt/crm-survey/schema.sql || { echo ">>> schema 导入失败"; exit 1; }
     mysql < /opt/crm-survey/init-admin.sql || { echo ">>> 管理员种子导入失败"; exit 1; }
+    # 自检: 用验收侧同款连接方式 (TCP + crm) 验一遍, 不通不算就绪
+    mysql -h127.0.0.1 -ucrm -pcrm123 crm_survey -N -s -e "SELECT 1;" >/dev/null 2>&1 \
+        || { echo ">>> crm 账号 TCP 自检失败 (匿名用户残留/监听问题)"; exit 1; }
     echo ">>> 种子导入完成"
 fi
 
