@@ -2,10 +2,11 @@
 # ============================================================
 # CRM 问卷系统 - 评测脚本 (verifier)
 # 判分点 = instruction.md 期望结果:
-#   1/2. 受访者作答链: 模拟 10 位受访者经 HTTP 提交, 每人
-#        survey_feedback_question +2 (题干快照) / survey_feedback_option +2
-#        (单选一题一项), 10 次累计各 20 行, 零缺失, 页面提示问卷已提交
-#   3.   仓库根 bugs/BUG-*.md, 五节: 标题/复现步骤/根本原因/影响范围/修复方案
+#   1/2. 受访者作答链: 模拟 10 位受访者经 HTTP 提交, 每人提交
+#        2 道单选(各勾1项) + 1 道多选(3 选项勾 2 项): survey_feedback_question
+#        +3 (题干快照) / survey_feedback_option +4 (单选两项+多选两项),
+#        10 人累计 30/40 行, 零缺失, 页面提示问卷已提交
+#   3.   bugs/ 下至少两张 BUG-*.md, 每张五节: 标题/复现步骤/根本原因/影响范围/修复方案
 # 具 (问卷/题目/选项/邀请) 由本脚本直插数据库构造, 邮箱和 uuid 每次随机,
 # agent 无法预埋 —— 结构性反硬编码。
 # 验收前强制以 /opt/crm-survey 源码重建部署 (验收对象永远是源码的产物)。
@@ -79,7 +80,7 @@ esac
 # 基线 = 镜像构建时固化的原始 src 快照 (环境侧 /opt/.baseline/src.tar.gz);
 # 验证侧不持有与环境逐字节相同的资产。一行修复 = 2删+2增 = 4
 BASELINE_TAR="${BASELINE_TAR:-/opt/.baseline/src.tar.gz}"
-LINE_BUDGET="${LINE_BUDGET:-4}"
+LINE_BUDGET="${LINE_BUDGET:-6}"
 if [ ! -f "$BASELINE_TAR" ]; then
     echo "[verifier] baseline snapshot missing: $BASELINE_TAR (预算检查是硬约束, 不允许静默跳过)"
     fail
@@ -125,12 +126,14 @@ SID=$(db "INSERT INTO survey (title, description, status, creator_id, publish_ti
 VALUES ('评测问卷-$STAMP', 'verifier fixture', 1, 1, NOW(), 0, NOW(), NOW()); SELECT LAST_INSERT_ID();")
 [ -n "${SID:-}" ] || { echo "[verifier] fixture survey failed"; fail; }
 
-Q1TEXT="评测单选一-$STAMP"; Q2TEXT="评测单选二-$STAMP"
+Q1TEXT="评测单选一-$STAMP"; Q2TEXT="评测单选二-$STAMP"; Q3TEXT="评测多选一-$STAMP"
 Q1=$(db "INSERT INTO survey_question (survey_id, standard_question_id, question_type, content, is_required, sort_no, is_deleted, create_time, update_time)
 VALUES ($SID, 0, 1, '$Q1TEXT', 1, 1, 0, NOW(), NOW()); SELECT LAST_INSERT_ID();")
 Q2=$(db "INSERT INTO survey_question (survey_id, standard_question_id, question_type, content, is_required, sort_no, is_deleted, create_time, update_time)
 VALUES ($SID, 0, 1, '$Q2TEXT', 1, 2, 0, NOW(), NOW()); SELECT LAST_INSERT_ID();")
-[ -n "${Q1:-}" ] && [ -n "${Q2:-}" ] || { echo "[verifier] fixture questions failed"; fail; }
+Q3=$(db "INSERT INTO survey_question (survey_id, standard_question_id, question_type, content, is_required, sort_no, is_deleted, create_time, update_time)
+VALUES ($SID, 0, 2, '$Q3TEXT', 1, 3, 0, NOW(), NOW()); SELECT LAST_INSERT_ID();")
+[ -n "${Q1:-}" ] && [ -n "${Q2:-}" ] && [ -n "${Q3:-}" ] || { echo "[verifier] fixture questions failed"; fail; }
 
 O11=$(db "INSERT INTO survey_question_option (survey_question_id, option_content, sort_no, create_time) VALUES ($Q1, '选项甲-$STAMP', 1, NOW()); SELECT LAST_INSERT_ID();")
 O12=$(db "INSERT INTO survey_question_option (survey_question_id, option_content, sort_no, create_time) VALUES ($Q1, '选项乙-$STAMP', 2, NOW()); SELECT LAST_INSERT_ID();")
@@ -138,7 +141,11 @@ O13=$(db "INSERT INTO survey_question_option (survey_question_id, option_content
 O21=$(db "INSERT INTO survey_question_option (survey_question_id, option_content, sort_no, create_time) VALUES ($Q2, '赤-$STAMP', 1, NOW()); SELECT LAST_INSERT_ID();")
 O22=$(db "INSERT INTO survey_question_option (survey_question_id, option_content, sort_no, create_time) VALUES ($Q2, '橙-$STAMP', 2, NOW()); SELECT LAST_INSERT_ID();")
 O23=$(db "INSERT INTO survey_question_option (survey_question_id, option_content, sort_no, create_time) VALUES ($Q2, '黄-$STAMP', 3, NOW()); SELECT LAST_INSERT_ID();")
-[ -n "${O11:-}" ] && [ -n "${O12:-}" ] && [ -n "${O13:-}" ] && [ -n "${O21:-}" ] && [ -n "${O22:-}" ] && [ -n "${O23:-}" ] || { echo "[verifier] fixture options failed"; fail; }
+O31=$(db "INSERT INTO survey_question_option (survey_question_id, option_content, sort_no, create_time) VALUES ($Q3, '梅-$STAMP', 1, NOW()); SELECT LAST_INSERT_ID();")
+O32=$(db "INSERT INTO survey_question_option (survey_question_id, option_content, sort_no, create_time) VALUES ($Q3, '兰-$STAMP', 2, NOW()); SELECT LAST_INSERT_ID();")
+O33=$(db "INSERT INTO survey_question_option (survey_question_id, option_content, sort_no, create_time) VALUES ($Q3, '竹-$STAMP', 3, NOW()); SELECT LAST_INSERT_ID();")
+[ -n "${O11:-}" ] && [ -n "${O12:-}" ] && [ -n "${O13:-}" ] && [ -n "${O21:-}" ] && [ -n "${O22:-}" ] && [ -n "${O23:-}" ] \
+&& [ -n "${O31:-}" ] && [ -n "${O32:-}" ] && [ -n "${O33:-}" ] || { echo "[verifier] fixture options failed"; fail; }
 
 # 10 位受访者: 每人一条邀请 (uuid 随机, 掩码按各自邮箱现算)
 UUID_CSV=""
@@ -183,7 +190,15 @@ while read -r UUID EMAIL; do
         --data-urlencode "questions[1].answers[0].id=$O23" \
         --data-urlencode "questions[1].answers[0].content=黄-$STAMP" \
         --data-urlencode "questions[1].answers[1].content=赤-$STAMP" \
-        --data-urlencode "questions[1].answers[2].content=橙-$STAMP")
+        --data-urlencode "questions[1].answers[2].content=橙-$STAMP" \
+        --data-urlencode "questions[2].id=$Q3" \
+        --data-urlencode "questions[2].type=2" \
+        --data-urlencode "questions[2].text=$Q3TEXT" \
+        --data-urlencode "questions[2].answers[0].id=$O31" \
+        --data-urlencode "questions[2].answers[0].content=梅-$STAMP" \
+        --data-urlencode "questions[2].answers[1].id=$O32" \
+        --data-urlencode "questions[2].answers[1].content=兰-$STAMP" \
+        --data-urlencode "questions[2].answers[2].content=竹-$STAMP")
     echo "$RESP" | grep -q "问卷已提交" || { echo "[verifier] r$i submit page abnormal"; fail; }
     rm -f "$JAR"
 done < "/tmp/verifier-invites-$STAMP.txt"
@@ -207,44 +222,47 @@ FB=$(db "SELECT COUNT(*) FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV);"
 FQ=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV));")
 FO=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV)));")
 [ "$FB" = "10" ] || { echo "[verifier] feedback rows=$FB want 10"; fail; }
-[ "$FQ" = "20" ] || { echo "[verifier] feedback_question rows=$FQ want 20"; fail; }
-[ "$FO" = "20" ] || { echo "[verifier] feedback_option rows=$FO want 20"; fail; }
+[ "$FQ" = "30" ] || { echo "[verifier] feedback_question rows=$FQ want 30"; fail; }
+[ "$FO" = "40" ] || { echo "[verifier] feedback_option rows=$FO want 40"; fail; }
 
-# ---------- 4.5 逐邀请验收: 每人恰好 1 主记录 + 2 题干 + 2 选项, 且内容关联逐人对 ----------
+# ---------- 4.5 逐邀请验收: 每人恰好 1 主记录 + 3 题干 + 4 选项, 且内容关联逐人对 ----------
 n=0
 while read -r U E; do
     n=$((n+1))
     FID=$(db "SELECT id FROM survey_feedback WHERE invite_uuid='$U';")
     [ -n "$FID" ] || { echo "[verifier] r$n feedback row missing"; fail; }
     QN=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID;")
-    [ "$QN" = "2" ] || { echo "[verifier] r$n feedback_question=$QN want 2"; fail; }
-    QC=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID AND ((question_id=$Q1 AND question_content='$Q1TEXT') OR (question_id=$Q2 AND question_content='$Q2TEXT'));")
-    [ "$QC" = "2" ] || { echo "[verifier] r$n question snapshot content mismatch"; fail; }
+    [ "$QN" = "3" ] || { echo "[verifier] r$n feedback_question=$QN want 3"; fail; }
+    QC=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id=$FID AND ((question_id=$Q1 AND question_content='$Q1TEXT') OR (question_id=$Q2 AND question_content='$Q2TEXT') OR (question_id=$Q3 AND question_content='$Q3TEXT'));")
+    [ "$QC" = "3" ] || { echo "[verifier] r$n question snapshot content mismatch"; fail; }
     ON=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID);")
-    [ "$ON" = "2" ] || { echo "[verifier] r$n feedback_option=$ON want 2"; fail; }
-    OC=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID) AND ((option_id=$O12 AND option_content='选项乙-$STAMP') OR (option_id=$O23 AND option_content='黄-$STAMP'));")
-    [ "$OC" = "2" ] || { echo "[verifier] r$n option content/link mismatch"; fail; }
+    [ "$ON" = "4" ] || { echo "[verifier] r$n feedback_option=$ON want 4"; fail; }
+    OC=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id=$FID) AND ((option_id=$O12 AND option_content='选项乙-$STAMP') OR (option_id=$O23 AND option_content='黄-$STAMP') OR (option_id=$O31 AND option_content='梅-$STAMP') OR (option_id=$O32 AND option_content='兰-$STAMP'));")
+    [ "$OC" = "4" ] || { echo "[verifier] r$n option content/link mismatch"; fail; }
 done < "/tmp/verifier-invites-$STAMP.txt"
 
 # ---------- 4.7 终态复验: 全部提交结束后再数一遍, 数据要还是那些 (落库不是内存假象) ----------
 FB2=$(db "SELECT COUNT(*) FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV);")
 FQ2=$(db "SELECT COUNT(*) FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV));")
 FO2=$(db "SELECT COUNT(*) FROM survey_feedback_option WHERE feedback_question_id IN (SELECT id FROM survey_feedback_question WHERE feedback_id IN (SELECT id FROM survey_feedback WHERE invite_uuid IN ($UUID_CSV)));")
-[ "$FB2" = "10" ] && [ "$FQ2" = "20" ] && [ "$FO2" = "20" ] || { echo "[verifier] final recount drifted: $FB2/$FQ2/$FO2"; fail; }
+[ "$FB2" = "10" ] && [ "$FQ2" = "30" ] && [ "$FO2" = "40" ] || { echo "[verifier] final recount drifted: $FB2/$FQ2/$FO2"; fail; }
 
-# ---------- 5. bug 单 (期望结果 3): 文件名格式 + 五节齐全且各有实质内容 ----------
-BUGFILE=$(ls "$BUGS_DIR"/BUG-*.md 2>/dev/null | head -1)
-[ -n "$BUGFILE" ] || { echo "[verifier] no bug report"; fail; }
-[ "$(wc -c < "$BUGFILE")" -gt 100 ] || { echo "[verifier] bug report too thin"; fail; }
-echo "$(basename "$BUGFILE")" | grep -qE '^BUG-[0-9]{8}-[0-9]+\.md$' || { echo "[verifier] bug report filename not BUG-<date>-<seq>.md"; fail; }
-for S in 标题 复现步骤 根本原因 影响范围 修复方案; do
-    grep -q "$S" "$BUGFILE" || { echo "[verifier] bug report missing section: $S"; fail; }
-    # 节标题之后、下一节之前, 至少要有一行非空正文
-    awk -v s="$S" '
-        index($0, "## " s) || index($0, "【" s) {f=1; next}
-        f && /^#{1,6} / {f=0}
-        f && NF {c=1}
-        END {exit !c}' "$BUGFILE" || { echo "[verifier] bug report section empty: $S"; fail; }
+# ---------- 5. bug 单 (期望结果 3): 每个根因一张, 至少两张, 逐张检查五节 ----------
+BUGS=$(ls "$BUGS_DIR"/BUG-*.md 2>/dev/null)
+[ -n "$BUGS" ] || { echo "[verifier] no bug report"; fail; }
+[ "$(echo "$BUGS" | wc -l)" -ge 2 ] || { echo "[verifier] need >=2 bug reports (one per root cause), got: $BUGS"; fail; }
+for BUGFILE in $BUGS; do
+    [ "$(wc -c < "$BUGFILE")" -gt 100 ] || { echo "[verifier] bug report too thin: $BUGFILE"; fail; }
+    echo "$(basename "$BUGFILE")" | grep -qE '^BUG-[0-9]{8}-[0-9]+\.md$' || { echo "[verifier] bug report filename not BUG-<date>-<seq>.md: $BUGFILE"; fail; }
+    for S in 标题 复现步骤 根本原因 影响范围 修复方案; do
+        grep -q "$S" "$BUGFILE" || { echo "[verifier] bug report missing section: $S in $BUGFILE"; fail; }
+        # 节标题之后、下一节之前, 至少要有一行非空正文
+        awk -v s="$S" '
+            index($0, "## " s) || index($0, "【" s) {f=1; next}
+            f && /^#{1,6} / {f=0}
+            f && NF {c=1}
+            END {exit !c}' "$BUGFILE" || { echo "[verifier] bug report section empty: $S in $BUGFILE"; fail; }
+    done
 done
 
 # ---------- 6. 全过 ----------

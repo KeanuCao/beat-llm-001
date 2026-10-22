@@ -1,10 +1,12 @@
 #!/bin/bash
 # ============================================================
-# 参考解 (harbor 把 solution/ 拷到容器 /solution/ 下执行):
-#   一行修复: Question.getAnswers() 的数组元素类型与 indexed 属性类型
-#   对齐 (BaseSurveyItem[] -> Answer[]), java.beans 内省配对恢复,
-#   嵌套绑定就通了; SuperBeanConverter 吞异常才会静默丢数据, 修好即愈。
-#   纯 sed 实现 —— CentOS 7 没有 python3, 别依赖它。
+# 参考解 (harbor 把 solution/ 拷到容器 /solution/ 下执行), 两处修复共 3 删 3 增:
+#   修复一: Question.getAnswers() 数组元素类型与 indexed 属性类型对齐
+#   (BaseSurveyItem[] -> Answer[]), java.beans 内省配对恢复, 嵌套绑定
+#   就通了; SuperBeanConverter 吞异常才会静默丢数据, 修好即愈。
+#   修复二: SurveyAnswerAction 落库分支补 type=2 (多选) —— 勾中的选项
+#   按行落库, 不再掉进开放式分支。
+#   纯 sed 实现, 别依赖任何脚本外的东西。
 # ============================================================
 set -e
 
@@ -16,29 +18,40 @@ fi
 
 cd /opt/crm-survey
 Q=src/main/java/com/legacy/survey/pojo/Question.java
+A=src/main/java/com/legacy/survey/web/action/SurveyAnswerAction.java
 
+# 修复一: getAnswers() 数组元素类型与 indexed 属性类型对齐, java.beans 内省配对恢复
 if grep -q "public Answer\[\] getAnswers()" "$Q"; then
-    echo ">>> 修复已存在, 跳过"
+    echo ">>> 修复一已存在, 跳过"
 else
     sed -i 's|public BaseSurveyItem\[\] getAnswers() {|public Answer[] getAnswers() {|' "$Q"
     sed -i 's|return answers.toArray(new BaseSurveyItem\[answers.size()\]);|return answers.toArray(new Answer[answers.size()]);|' "$Q"
-    echo ">>> 一行修复已应用"
+    echo ">>> 修复一已应用"
+fi
+
+# 修复二: 多选题型 (type=2) 落库走选择式分支 (勾中的选项按行落库), 不再掉进开放式分支
+# (sed 分隔符用 , —— 替换文本里有 ||, 用 | 会炸)
+if grep -q "if (q.getType() == 1 || q.getType() == 2) {" "$A"; then
+    echo ">>> 修复二已存在, 跳过"
+else
+    sed -i 's,if (q.getType() == 1) {,if (q.getType() == 1 || q.getType() == 2) {,' "$A"
+    echo ">>> 修复二已应用"
 fi
 
 echo ">>> 调用运维标准脚本: 打包 + 部署 + 拉服务 + 等就绪..."
 bash /opt/crm-survey/deploy.sh
 
 echo ">>> 部署完成, 可以跑评测了"
-echo ">>> 改动行数: git diff --numstat (应为 2 删 2 增, 预算内)"
+echo ">>> 改动行数: git diff --numstat (应为 3 删 3 增, 预算 6 行内)"
 
-# ---------- 交付物 2: bug 单 (期望结果 3) ----------
+# ---------- 交付物 2: bug 单 (期望结果 3, 每个根因一张) ----------
 mkdir -p /opt/crm-survey/bugs
-BUG=/opt/crm-survey/bugs/BUG-$(date +%Y%m%d)-001.md
-cat > "$BUG" <<'EOF'
-# BUG-20261021-001 问卷系统受访者回答数据静默丢失
+BUG1=/opt/crm-survey/bugs/BUG-$(date +%Y%m%d)-001.md
+cat > "$BUG1" <<'EOF'
+# BUG-20261021-001 问卷系统受访者单选回答数据静默丢失
 
 ## 标题
-受访者提交的问卷回答部分丢失, 页面无任何报错
+受访者提交的单选问卷回答部分丢失, 页面无任何报错
 
 ## 复现步骤
 1. 获得一条邀请链接 (survey_invite 中的 uuid)
@@ -66,4 +79,35 @@ and write methods", Question 的属性描述符构建不出来, 嵌套参数绑�
 (BaseSurveyItem[] -> Answer[]), 内省恢复正常, 嵌套参数绑定连通;
 改动一处方法 (两个物理行), 满足紧急补丁的行数限制。
 EOF
-echo ">>> bug 单已提交: $BUG"
+
+BUG2=/opt/crm-survey/bugs/BUG-$(date +%Y%m%d)-002.md
+cat > "$BUG2" <<'EOF'
+# BUG-20261021-002 多选题型的勾选项不落库
+
+## 标题
+多选题受访者勾选的选项没有被保存
+
+## 复现步骤
+1. 发布一份含多选题 (question_type=2) 的问卷, 邀请受访者作答
+2. 受访者在多选题勾选 2 项, 提交, 页面提示"问卷已提交"
+3. 查库: survey_feedback_question 有该题的题干行, 但
+   survey_feedback_option 里勾选的选项一行都没有
+   (answerContent 还被写成了第一个选项的内容, 语义错乱)
+
+## 根本原因
+SurveyAnswerAction 落库分支只写了 `if (q.getType() == 1)`, 多选题
+(type=2) 掉进了开放式分支 (else), 被当成自由文本题处理: 勾中的
+选项不落 survey_feedback_option, 第一个选项的内容还被当作
+answerContent 写到题干行上。多选题型是上月"题型三分法"重构时
+上线的新功能, 提交侧落库漏了 type=2 的分支。
+
+## 影响范围
+所有多选题型的受访者作答, 勾选项全量丢失 (新功能上线即坏);
+单选与开放式题不受影响。
+
+## 修复方案
+将落库分支条件改为 `if (q.getType() == 1 || q.getType() == 2)`,
+多选与单选同为选择式: 勾中的选项 (id>0) 按行落
+survey_feedback_option, 多选自然支持多行; 改动一个条件 (一行)。
+EOF
+echo ">>> bug 单已提交: $BUG1 / $BUG2"
